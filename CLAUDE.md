@@ -80,12 +80,14 @@ docs/ ERD.md, ARCHITECTURE.md, COMPLIANCE.md
    onward so history stays meaningful. Ask before creating the GitHub remote or pushing.
 
 ## Build phases (✅ = done)
-0. ⬅ **NEXT** — Foundation: repo scaffold, Prisma schema (users, roles, wallets, assets,
-   ledger entries, orders, trades — core ERD), design system (type + color tokens per
-   brand). No Docker/CI/deploy setup yet — local Postgres + Redis only, devops deferred
-   until the app is worth deploying.
-1. Auth & security: registration/login, email verification, TOTP 2FA, RBAC, session/device
-   management, login history, anti-phishing code.
+0. ✅ Foundation: repo scaffold (Next.js 15.5.20 in `web/`, TS strict, Tailwind 4, React 19),
+   design system (`docs/DESIGN_SYSTEM.md` — Space Grotesk/Manrope/JetBrains Mono, brand color
+   tokens, spacing/radius/elevation scales), shadcn/ui base (Button/Card/Input/Label, set up
+   by hand since `ui.shadcn.com` isn't reachable from this environment), Prisma 6.19.3 schema
+   for the core ERD (`docs/ERD.md`). Repo pushed to GitHub (private,
+   github.com/omolewastephen/tradynance). No Docker/CI yet — deferred per working agreement.
+1. ⬅ **NEXT** — Auth & security: registration/login, email verification, TOTP 2FA, RBAC,
+   session/device management, login history, anti-phishing code.
 2. Wallets & deposits: coin/network models, HD address generation, deposit address UI + QR,
    `chain-watcher` service (1–2 chains first), manual admin-confirm fallback, ledger credits.
 3. Withdrawals: request flow, OTP/2FA/email confirmation, admin approval queue, fees,
