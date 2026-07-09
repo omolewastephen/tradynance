@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Dark is the default surface (data-theme="dark" set in <html>); light overrides below.
+   See docs/DESIGN_SYSTEM.md for rationale — do not hand-edit values without updating that file too. */
+:root {
+  --background: #08090c;
+  --surface: #111827;
+  --surface-raised: #151e33;
+  --foreground: #edeff3;
+  --foreground-muted: #8a93a6;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+
+  --primary: #18c964;
+  --primary-foreground: #062a16;
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --danger: #ef4444;
+  --danger-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #1a1203;
+
+  --price-up: var(--primary);
+  --price-down: var(--danger);
+  --ring: var(--accent);
+
+  --shadow-elevation-2: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+  --shadow-elevation-3: 0 24px 64px -12px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] {
+  --background: #ffffff;
+  --surface: #f7f8fa;
+  --surface-raised: #ffffff;
+  --foreground: #0f172a;
+  --foreground-muted: #5b6472;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-subtle: rgba(15, 23, 42, 0.06);
+
+  --primary: #109a4e;
+  --primary-foreground: #ffffff;
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+
+  --shadow-elevation-2: 0 8px 24px -4px rgba(15, 23, 42, 0.12);
+  --shadow-elevation-3: 0 24px 64px -12px rgba(15, 23, 42, 0.18);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-price-up: var(--price-up);
+  --color-price-down: var(--price-down);
+  --color-ring: var(--ring);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* type scale — see docs/DESIGN_SYSTEM.md */
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: 2.25rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.01em;
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h3: 1.375rem;
+  --text-h3--line-height: 1.3;
+  --text-h4: 1.125rem;
+  --text-h4--line-height: 1.4;
+  --text-data: 0.875rem;
+  --text-data--line-height: 1.4;
+  --text-data-lg: 1.25rem;
+  --text-data-lg--line-height: 1.2;
+
+  --shadow-elevation-2: var(--shadow-elevation-2);
+  --shadow-elevation-3: var(--shadow-elevation-3);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Tabular figures wherever numbers are compared at a glance: prices, balances, PnL, timestamps */
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

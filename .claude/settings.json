@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/user/Desktop/tradynance 2>&1; echo \"---\"; ls -la /Users/user/Desktop 2>&1 | head -30)",
+      "Read(//Users/user/Desktop/**)",
+      "Bash(git config *)",
+      "Bash(find / -maxdepth 6 -iname \"search.py\" -path \"*ui-ux-pro-max*\")",
+      "Bash(find / -maxdepth 8 -ipath \"*ui-ux-pro-max*scripts*\")",
+      "Read(//Users/user/.claude/commands/ui-ux-pro-max/src/ui-ux-pro-max/scripts/**)",
+      "Read(//Users/user/.claude/commands/ui-ux-pro-max/cli/assets/scripts/**)",
+      "Bash(gh auth *)",
+      "Bash(python3 search.py \"fintech crypto trading exchange dashboard SaaS dark mode premium\" --design-system -p \"Tradynance\")",
+      "Bash(python3 search.py \"fintech trading precision technical premium editorial\" --domain typography -n 8)",
+      "Bash(python3 search.py \"glassmorphism dark trading dashboard premium\" --domain style -n 5)",
+      "Bash(python3 search.py \"geometric sans UI body legible alternative distinctive not inter\" --domain google-fonts -n 6)",
+      "Bash(git init *)",
+      "Bash(gh repo *)",
+      "Bash(npm -v)",
+      "Bash(npx --yes create-next-app@15.5.0 web --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(curl -sI https://registry.npmjs.org)",
+      "Bash(ping -c1 -t2 8.8.8.8)",
+      "Bash(npm view *)",
+      "Bash(python3 -c \"import json,sys; v=json.load\\(sys.stdin\\); print\\([x for x in v if x.startswith\\('15.5'\\)][-10:]\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm audit *)",
+      "Bash(npm run *)",
+      "Bash(npx --yes shadcn@latest init -d --base-color slate)",
+      "Bash(npx --yes shadcn@latest init -d)",
+      "Bash(curl -sI https://ui.shadcn.com)",
+      "Bash(nslookup ui.shadcn.com)",
+      "Bash(curl -v --max-time 8 https://ui.shadcn.com)",
+      "Bash(echo \"started pid $!\")",
+      "Bash(curl -s http://localhost:3000)",
+      "Read(//private/tmp/**)",
+      "Bash(kill %1)",
+      "Bash(jobs)",
+      "Bash(python3 -c \"import json,sys; v=json.load\\(sys.stdin\\); print\\([x for x in v if x.startswith\\('6.'\\)][-5:]\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(npx prisma *)",
+      "Bash(git add *)"
+    ]
+  }
+}

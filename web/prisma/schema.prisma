@@ -1,0 +1,362 @@
+// Tradynance — core ERD (Phase 0)
+// Prisma 6 conventional syntax — do NOT migrate to v7's prisma.config.ts + driver adapters.
+// See CLAUDE.md and docs/ERD.md.
+//
+// Auth-provider tables (Account, Session, Verification) are intentionally NOT here yet —
+// they land in Phase 1 wired through better-auth's own schema generation, then get
+// reconciled against the User model below.
+//
+// Money-correctness invariant (CLAUDE.md hard convention #3): Wallet.balance /
+// Wallet.lockedBalance are CACHED, DERIVED values. The only source of truth for money
+// movement is LedgerEntry, which is append-only — never update or delete a LedgerEntry.
+// Every balance mutation happens by writing a new LedgerEntry and updating the wallet's
+// cached balance in the same DB transaction.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Identity & access
+// ─────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  FINANCE
+  SUPPORT
+  COMPLIANCE
+  MODERATOR
+  DEVELOPER
+  AUDITOR
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  FROZEN
+  BANNED
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id            String  @id @default(cuid())
+  email         String  @unique
+  username      String  @unique
+  emailVerified Boolean @default(false)
+  name          String?
+  image         String?
+
+  role      Role       @default(USER)
+  status    UserStatus @default(ACTIVE)
+  kycStatus KycStatus  @default(UNVERIFIED)
+
+  country String?
+  phone   String?
+
+  referralCode String  @unique
+  referredById String?
+  referredBy   User?   @relation("Referrals", fields: [referredById], references: [id])
+  referrals    User[]  @relation("Referrals")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wallets       Wallet[]
+  ledgerEntries LedgerEntry[]
+  deposits      Deposit[]
+  withdrawals   Withdrawal[]
+  orders        Order[]
+  auditLogs     AuditLog[]
+
+  @@index([status])
+  @@index([kycStatus])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Assets & wallets
+// ─────────────────────────────────────────────────────────────────────────
+
+model Asset {
+  id        String   @id @default(cuid())
+  symbol    String   @unique // BTC, ETH, USDT...
+  name      String
+  decimals  Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  networks      AssetNetwork[]
+  wallets       Wallet[]
+  ledgerEntries LedgerEntry[]
+  deposits      Deposit[]
+  withdrawals   Withdrawal[]
+  baseMarkets   Market[]       @relation("MarketBase")
+  quoteMarkets  Market[]       @relation("MarketQuote")
+}
+
+model AssetNetwork {
+  id              String  @id @default(cuid())
+  assetId         String
+  asset           Asset   @relation(fields: [assetId], references: [id])
+  network         String // e.g. "BTC", "ERC20", "TRC20", "BEP20", "SOL"
+  minDeposit      Decimal @db.Decimal(36, 18)
+  withdrawalFee   Decimal @db.Decimal(36, 18)
+  requiresMemo    Boolean @default(false)
+  contractAddress String?
+  isActive        Boolean @default(true)
+
+  @@unique([assetId, network])
+}
+
+model Wallet {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id])
+  assetId String
+  asset   Asset   @relation(fields: [assetId], references: [id])
+  network String?
+
+  // Cached/derived — see money-correctness invariant at top of file.
+  balance       Decimal @default(0) @db.Decimal(36, 18)
+  lockedBalance Decimal @default(0) @db.Decimal(36, 18) // held by open orders/withdrawals
+
+  depositAddress String?
+  depositMemo    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ledgerEntries LedgerEntry[]
+
+  @@unique([userId, assetId, network])
+  @@index([depositAddress])
+}
+
+enum LedgerEntryType {
+  DEPOSIT
+  WITHDRAWAL
+  TRADE_FILL
+  FEE
+  TRANSFER_IN
+  TRANSFER_OUT
+  CONVERSION
+  ADJUSTMENT
+}
+
+enum LedgerEntryStatus {
+  PENDING
+  CONFIRMED
+  REVERSED
+}
+
+// Append-only. No update/delete from application code — corrections are new entries
+// (e.g. an ADJUSTMENT or a reversing entry referencing the original by id in `note`).
+model LedgerEntry {
+  id       String @id @default(cuid())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  assetId  String
+  asset    Asset  @relation(fields: [assetId], references: [id])
+
+  type         LedgerEntryType
+  status       LedgerEntryStatus @default(PENDING)
+  amount       Decimal           @db.Decimal(36, 18) // signed: +credit / -debit
+  balanceAfter Decimal           @db.Decimal(36, 18) // snapshot for reconciliation
+
+  referenceType String? // "Deposit" | "Withdrawal" | "Order" | "Trade" | ...
+  referenceId   String?
+  note          String?
+
+  createdAt DateTime @default(now())
+
+  @@index([walletId, createdAt])
+  @@index([userId])
+  @@index([referenceType, referenceId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Deposits & withdrawals
+// ─────────────────────────────────────────────────────────────────────────
+
+enum DepositStatus {
+  PENDING
+  CONFIRMED
+  CREDITED
+  REJECTED
+}
+
+model Deposit {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  assetId       String
+  asset         Asset         @relation(fields: [assetId], references: [id])
+  network       String
+  amount        Decimal       @db.Decimal(36, 18)
+  txHash        String?
+  fromAddress   String?
+  toAddress     String
+  confirmations Int           @default(0)
+  status        DepositStatus @default(PENDING)
+  creditedAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@index([userId, status])
+  @@index([txHash])
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+model Withdrawal {
+  id                 String           @id @default(cuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id])
+  assetId            String
+  asset              Asset            @relation(fields: [assetId], references: [id])
+  network            String
+  amount             Decimal          @db.Decimal(36, 18)
+  fee                Decimal          @db.Decimal(36, 18)
+  destinationAddress String
+  destinationMemo    String?
+  txHash             String?
+  status             WithdrawalStatus @default(PENDING)
+  approvedById       String?
+  approvedAt         DateTime?
+  createdAt          DateTime         @default(now())
+
+  @@index([userId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Markets & spot trading
+// ─────────────────────────────────────────────────────────────────────────
+
+model Market {
+  id           String @id @default(cuid())
+  symbol       String @unique // "BTCUSDT"
+  baseAssetId  String
+  baseAsset    Asset  @relation("MarketBase", fields: [baseAssetId], references: [id])
+  quoteAssetId String
+  quoteAsset   Asset  @relation("MarketQuote", fields: [quoteAssetId], references: [id])
+
+  isActive          Boolean @default(true)
+  minOrderSize      Decimal @db.Decimal(36, 18)
+  pricePrecision    Int
+  quantityPrecision Int
+  makerFeeBps       Int     @default(10)
+  takerFeeBps       Int     @default(20)
+
+  orders Order[]
+  trades Trade[]
+
+  @@index([baseAssetId, quoteAssetId])
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+}
+
+enum TimeInForce {
+  GTC
+  IOC
+  FOK
+}
+
+enum OrderStatus {
+  OPEN
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+}
+
+model Order {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  marketId String
+  market   Market @relation(fields: [marketId], references: [id])
+
+  side           OrderSide
+  type           OrderType
+  timeInForce    TimeInForce @default(GTC)
+  price          Decimal?    @db.Decimal(36, 18) // null for market orders
+  quantity       Decimal     @db.Decimal(36, 18)
+  filledQuantity Decimal     @default(0) @db.Decimal(36, 18)
+  status         OrderStatus @default(OPEN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyTrades  Trade[] @relation("BuyOrder")
+  sellTrades Trade[] @relation("SellOrder")
+
+  @@index([marketId, status])
+  @@index([userId])
+}
+
+model Trade {
+  id          String @id @default(cuid())
+  marketId    String
+  market      Market @relation(fields: [marketId], references: [id])
+  buyOrderId  String
+  buyOrder    Order  @relation("BuyOrder", fields: [buyOrderId], references: [id])
+  sellOrderId String
+  sellOrder   Order  @relation("SellOrder", fields: [sellOrderId], references: [id])
+
+  price     Decimal @db.Decimal(36, 18)
+  quantity  Decimal @db.Decimal(36, 18)
+  buyerFee  Decimal @db.Decimal(36, 18)
+  sellerFee Decimal @db.Decimal(36, 18)
+
+  createdAt DateTime @default(now())
+
+  @@index([marketId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Audit
+// ─────────────────────────────────────────────────────────────────────────
+
+// Nothing here is ever deleted or updated by application code.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+}
