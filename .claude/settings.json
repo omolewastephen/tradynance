@@ -139,10 +139,21 @@
       "Bash(curl -s -b /tmp/t1.txt http://localhost:3000/withdraw)",
       "Bash(node withdraw-e2e.js)",
       "Bash(node withdraw-approve.js)",
-      "Bash(grep -iE \"node_modules|\\\\.env$|generated/prisma\")"
+      "Bash(grep -iE \"node_modules|\\\\.env$|generated/prisma\")",
+      "Bash(curl -s --max-time 8 \"https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT\")",
+      "Bash(curl -s --max-time 8 \"https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT\")",
+      "Bash(curl -s --max-time 8 \"https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd\")",
+      "Bash(curl -s --max-time 8 \"https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT\")",
+      "Bash(curl -s --max-time 8 \"https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&order=market_cap_desc\")",
+      "Bash(mkdir -p \"/Users/user/Desktop/tradynance/web/src/app/\\(dashboard\\)/markets/[symbol]\")",
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\);print\\('module:',d.get\\('module'\\)\\);print\\('types:',d.get\\('types'\\)\\)\")",
+      "Bash(node markets-e2e.js)",
+      "Bash(curl -s -b /tmp/t1.txt http://localhost:3000/markets/BTCUSDT -o /tmp/detail.html -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(rm -rf .next)"
     ],
     "additionalDirectories": [
-      "/Users/user/Desktop/tradynance/web/src/app/api/auth"
+      "/Users/user/Desktop/tradynance/web/src/app/api/auth",
+      "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/markets"
     ]
   }
 }

@@ -90,6 +90,7 @@ model User {
   orders              Order[]
   auditLogs           AuditLog[]
   loginHistory        LoginHistory[]
+  watchlist           Watchlist[]
 
   displayUsername  String?
   twoFactorEnabled Boolean?    @default(false)
@@ -331,6 +332,9 @@ model Market {
   quoteAssetId String
   quoteAsset   Asset  @relation("MarketQuote", fields: [quoteAssetId], references: [id])
 
+  // Symbol on the upstream market-data source (data-api.binance.vision). Usually == symbol.
+  dataSourceSymbol String?
+
   isActive          Boolean @default(true)
   minOrderSize      Decimal @db.Decimal(36, 18)
   pricePrecision    Int
@@ -338,10 +342,39 @@ model Market {
   makerFeeBps       Int     @default(10)
   takerFeeBps       Int     @default(20)
 
-  orders Order[]
-  trades Trade[]
+  orders    Order[]
+  trades    Trade[]
+  ticker    Ticker?
+  watchedBy Watchlist[]
 
   @@index([baseAssetId, quoteAssetId])
+}
+
+// Latest live price + 24h stats per market, upserted by services/market-data. One row per
+// market; a cache of upstream data, not a source of truth for anything money-related.
+model Ticker {
+  id                 String   @id @default(cuid())
+  marketId           String   @unique
+  market             Market   @relation(fields: [marketId], references: [id])
+  lastPrice          Decimal  @db.Decimal(36, 18)
+  priceChangePercent Decimal  @db.Decimal(18, 4)
+  high24h            Decimal  @db.Decimal(36, 18)
+  low24h             Decimal  @db.Decimal(36, 18)
+  volume             Decimal  @db.Decimal(36, 8) // base-asset volume
+  quoteVolume        Decimal  @db.Decimal(36, 8) // quote-asset (USDT) volume
+  updatedAt          DateTime @updatedAt
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  marketId  String
+  market    Market   @relation(fields: [marketId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, marketId])
+  @@index([userId])
 }
 
 enum OrderSide {

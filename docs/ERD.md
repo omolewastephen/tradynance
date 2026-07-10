@@ -56,7 +56,13 @@ lockedBalance.
 **WithdrawalWhitelist** — per-user trusted destination address book, network-scoped. With
 `User.withdrawalWhitelistOnly`, withdrawals may only target these.
 
-**Market** — a trading pair (base/quote asset), precision + fee config.
+**Market** — a trading pair (base/quote asset), precision + fee config. `dataSourceSymbol`
+maps it to the upstream market-data feed.
+
+**Ticker** — one row per market, the latest live price + 24h high/low/volume/change, upserted
+by `services/market-data` (polling `data-api.binance.vision`). A cache; not money-relevant.
+
+**Watchlist** — per-user favourited markets (unique on user+market).
 
 **Order** → **Trade** — spot order book. An `Order` is user intent (side, type, TIF, price,
 quantity, fill progress); a `Trade` is one match between a buy order and a sell order at a
@@ -72,6 +78,7 @@ User ─┬─< Wallet >─┬─ Asset ─< AssetNetwork
       ├─< Deposit
       ├─< Withdrawal
       ├─< WithdrawalWhitelist
+      ├─< Watchlist >─ Market ─ Ticker (1:1, live price cache)
       ├─< Order >─< Trade >─ Market ─ Asset (base/quote)
       ├─< AuditLog (as actor)
       ├─< LoginHistory
@@ -101,3 +108,8 @@ type-checked:
   email OTP (from log) → confirm (funds locked, no ledger entry) → admin approve (balance
   debited to exactly amount+fee, one WITHDRAWAL ledger row, lock released, COMPLETED + txHash +
   audit) → separate withdrawal rejected (lock released, balance unchanged, no ledger entry).
+- **Phase 4** (migration `20260710154827_markets_ticker_watchlist`): market-data service
+  populated 14/14 live tickers; markets list renders live prices/sort/tabs/search; coin page
+  renders a real candlestick chart from live klines with interval switching; watchlist star
+  toggles + filters; dashboard shows the correct USD portfolio total (0.5 BTC + 4 ETH →
+  ~$39,213 at live prices). Caught + fixed an Intl.NumberFormat range bug in volume formatting.

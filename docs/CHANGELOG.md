@@ -3,6 +3,36 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-10 — Phase 4: Markets & live data
+- **`services/market-data`** — new standalone poller. Fetches Binance-format 24h tickers for
+  our 14 markets from `data-api.binance.vision` (public, no key; `api.binance.com` is
+  geo-blocked here) every 10s and upserts a `Ticker` row per market. A price cache, not a
+  source of truth for anything money-related.
+- **Schema**: `Ticker` (live price + 24h high/low/volume/change per market) and `Watchlist`;
+  seeded 14 USDT spot markets (BTC…TON). Migration `20260710154827_markets_ticker_watchlist`.
+- **Markets list** (`/markets`): sortable table with coin icons, live price, colored 24h %,
+  high/low/volume, All / Top gainers / Top losers / Watchlist tabs, search, and watchlist
+  stars. Client polls `/api/markets` every 10s for live updates.
+- **Coin detail** (`/markets/[symbol]`): price header + 24h change, a real **candlestick
+  chart** (`lightweight-charts` v5) fed by a server-side klines proxy
+  (`/api/markets/[symbol]/klines`), an interval toolbar (15m/1h/4h/1d/1w), and a 24h stats row.
+- **Watchlist**: `toggleWatchlist` server action, optimistic star on both the list and detail,
+  and a Watchlist tab filter.
+- **Real USD valuation** wired in from live prices (`src/lib/prices.ts`): the **dashboard
+  hero** now shows the portfolio's actual USD value (verified: 0.5 BTC + 4 ETH → $39,213 at
+  live prices) with a **hide-balance eye toggle**; the **wallet table** gained
+  Total / Available / In order / **Value (USD)** columns and an estimated-value header — the
+  columns picked up from the reference screenshots the user shared.
+- Verified end-to-end through the real browser: market-data populated 14/14 tickers, markets
+  list renders live prices, the candlestick chart renders from real klines, watchlist toggles,
+  and the dashboard shows the correct USD total. **Found + fixed a real bug by running it**:
+  the coin page 500'd on `Intl.NumberFormat` because 24h-volume formatting set
+  `maximumFractionDigits` (0) below `minimumFractionDigits` (2) — clamped it.
+- **Notes**: prices come from a public data mirror (values look ~2024-era — it's a replayed
+  feed in this environment, but real-shaped and proves the integration). It's polling, not a
+  true WebSocket stream yet (the eventual `market-data` broadcaster design); 10s client polling
+  is the honest MVP. No order book / recent-trades yet — those come with spot trading (Phase 5).
+
 ## 2026-07-10 — Phase 3: Withdrawals
 - **`packages/core/src/withdrawal.ts`** — the debit side of the ledger, same discipline as
   `creditDeposit`. Model: **reserve → settle**, with **release** on reject/cancel.

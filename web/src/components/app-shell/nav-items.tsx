@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Wallet,
   ArrowUpFromLine,
+  CandlestickChart,
   ShieldCheck,
   Landmark,
   Banknote,
@@ -15,6 +16,7 @@ export type NavSection = { heading?: string; items: NavItem[] };
 export const mainSection: NavSection = {
   items: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/markets", label: "Markets", icon: CandlestickChart },
     { href: "/wallet", label: "Wallet", icon: Wallet },
     { href: "/withdraw", label: "Withdraw", icon: ArrowUpFromLine },
     { href: "/settings/security", label: "Security", icon: ShieldCheck },

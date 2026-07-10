@@ -43,7 +43,8 @@ packages/
     generated/prisma/    generated client (gitignored build output)
 services/
   chain-watcher/         standalone Node/TS process (BTC esplora + ETH block-scan)
-  matching-engine/       (Phase 5)   market-data/ (Phase 4)   workers/ (BullMQ, later)
+  market-data/           standalone poller (Binance-format tickers → Ticker cache)
+  matching-engine/       (Phase 5)   workers/ (BullMQ, later)
 docs/ ERD.md, DESIGN_SYSTEM.md, CHANGELOG.md
 ```
 **Dependency rule:** outer → inner only. `packages/core` imports nothing from Next; both the
@@ -112,9 +113,14 @@ app and the services depend on it, never the reverse. All money movement flows t
    through the real browser against live Postgres (see docs/CHANGELOG.md). Stubbed: no on-chain
    broadcast (approve settles the ledger + records an admin-provided tx hash); email OTP logs
    to console.
-4. ⬅ **NEXT** — Markets & live data: `market-data` service, price feed, market list/coin detail pages,
-   watchlist.
-5. Spot trading: `matching-engine` service, order form (market/limit), order book UI, trade
+4. ✅ Markets & live data: `services/market-data` polls `data-api.binance.vision` for 14
+   USDT markets → `Ticker` cache; `/markets` list (live prices, sort, gainers/losers, search,
+   watchlist stars), `/markets/[symbol]` coin page (candlestick chart via `lightweight-charts`
+   + klines proxy, interval toolbar, 24h stats), `Watchlist` toggle, and real USD portfolio
+   valuation wired into the dashboard (hide-balance toggle) + wallet table (Total/Available/In
+   order/Value USD). Verified end-to-end through the browser. Polling not WebSocket streaming
+   yet; no order book / recent trades until Phase 5.
+5. ⬅ **NEXT** — Spot trading: `matching-engine` service, order form (market/limit), order book UI, trade
    history, open orders, GTC/IOC/FOK.
 6. Portfolio & dashboard: overview, balances, PnL, asset allocation + performance charts.
 7. Convert: instant asset conversion via market price + spread.
