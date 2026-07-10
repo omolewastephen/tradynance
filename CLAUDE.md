@@ -146,6 +146,18 @@ app and the services depend on it, never the reverse. All money movement flows t
     staking, launchpad, NFT marketplace.
 11. Hardening: rate limiting, audit trail completeness, monitoring (Sentry), CI/CD.
 
+## Running locally
+From the repo root:
+```
+npm install            # once (npm workspaces)
+npm run dev            # ensures Postgres is up, then starts web + market-data + market-maker
+                       #   → http://localhost:3000, color-prefixed logs, Ctrl-C stops all
+```
+First-time DB setup: `cd web && npx prisma migrate deploy && npm run db:seed`.
+Seeded logins: admin@tradynance.local / ChangeMe123!, trader1@example.com / Password123.
+Trading uses SPOT-network wallets — fund via Admin → Deposits (network `SPOT`).
+Env lives in `web/.env` (gitignored); see `web/.env.example`.
+
 ## Working agreement
 Work phase by phase. At the end of each phase: update the checklist above, run the relevant
 tests, and commit. Ask before large architectural changes and before anything that touches

@@ -5,5 +5,13 @@
     "web",
     "packages/*",
     "services/*"
-  ]
+  ],
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "dev:app": "concurrently -n web,market-data,market-maker -c green,cyan,magenta -k \"npm run dev --workspace=web\" \"npm start --workspace=@tradynance/market-data\" \"npm start --workspace=@tradynance/market-maker\"",
+    "db:seed": "npm run db:seed --workspace=web"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
 }

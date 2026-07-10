@@ -160,7 +160,9 @@
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('orderbook: bids',len\\(d['bids']\\),'asks',len\\(d['asks']\\),'spread',d['spread']\\)\")",
       "Bash(pkill -f \"market-maker/src/index\")",
       "Bash(node portfolio-e2e.js)",
-      "Bash(curl -s -b /tmp/t1.txt \"http://localhost:3000/api/portfolio/performance?range=7d\")"
+      "Bash(curl -s -b /tmp/t1.txt \"http://localhost:3000/api/portfolio/performance?range=7d\")",
+      "Bash(pkill -f \"scripts/dev.sh\")",
+      "Bash(pkill -f \"dev:app\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",
