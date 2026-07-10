@@ -1,0 +1,9 @@
+{
+  "name": "tradynance",
+  "private": true,
+  "workspaces": [
+    "web",
+    "packages/*",
+    "services/*"
+  ]
+}

@@ -20,6 +20,9 @@ export default async function DashboardLayout({
           <Link href="/dashboard" className="text-foreground-muted hover:text-foreground">
             Overview
           </Link>
+          <Link href="/wallet" className="text-foreground-muted hover:text-foreground">
+            Wallet
+          </Link>
           <Link
             href="/settings/security"
             className="text-foreground-muted hover:text-foreground"

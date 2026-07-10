@@ -1,0 +1,18 @@
+{
+  "name": "@tradynance/chain-watcher",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx --env-file=../../web/.env src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tradynance/core": "*",
+    "viem": "^2.55.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.0",
+    "typescript": "^5"
+  }
+}

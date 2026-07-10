@@ -1,0 +1,3 @@
+node_modules/
+# Prisma client is generated from web/prisma/schema.prisma — build output, not source.
+generated/

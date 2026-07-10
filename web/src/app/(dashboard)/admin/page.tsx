@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { requireAdmin } from "@/lib/auth-session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -5,17 +7,21 @@ export default async function AdminPage() {
   const session = await requireAdmin();
 
   return (
-    <div className="min-h-screen bg-background p-6 text-foreground">
+    <div className="flex flex-col gap-6">
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>Admin access confirmed</CardTitle>
+          <CardTitle>Admin</CardTitle>
           <CardDescription>
-            You&apos;re signed in as {session.user.email} with role{" "}
+            Signed in as {session.user.email} ·{" "}
             <span className="font-mono">{session.user.role as string}</span>. The full admin
-            panel (users, wallets, deposits, KYC, audit logs) is built in Phase 8.
+            panel (users, wallets, KYC, audit logs) is built out in Phase 8.
           </CardDescription>
         </CardHeader>
-        <CardContent />
+        <CardContent className="flex flex-col gap-2">
+          <Link href="/admin/deposits" className="text-accent hover:underline">
+            Deposits — manual credit &amp; pending queue →
+          </Link>
+        </CardContent>
       </Card>
     </div>
   );

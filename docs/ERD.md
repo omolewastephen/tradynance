@@ -1,7 +1,9 @@
-# Tradynance — ERD (through Phase 1)
+# Tradynance — ERD (through Phase 2)
 
 Source of truth is `web/prisma/schema.prisma`; this is a navigable summary, not a duplicate —
-update the schema first, then reflect changes here.
+update the schema first, then reflect changes here. The Prisma client is generated into
+`packages/core/generated/prisma` (see `generator.output`) so the Next.js app and the
+standalone `services/chain-watcher` share one client and one set of money-movement rules.
 
 ## Entities
 
@@ -26,15 +28,24 @@ with its own min-deposit/withdrawal-fee/memo-requirement.
 
 **Wallet** — one row per (user, asset, network). `balance` / `lockedBalance` are **cached**,
 derived from `LedgerEntry` — never mutated directly (see money-correctness invariant in the
-schema header and CLAUDE.md hard convention #3).
+schema header and CLAUDE.md hard convention #3). `derivationIndex` is the monotonic HD-tree
+index this wallet's `depositAddress` was derived at (null for networks without live derivation).
+
+**DerivationCounter** — one row per network, source of the monotonic `derivationIndex`.
+Incremented in the same transaction that provisions a wallet, so two wallets can never share
+an index (hence never share a deposit address). See `packages/core/src/wallet/provision.ts`.
 
 **LedgerEntry** — append-only. Every credit/debit (deposit, withdrawal, trade fill, fee,
 transfer, conversion, manual adjustment) is one row here, signed amount + balance snapshot.
-No update/delete from application code; corrections are new entries.
+No update/delete from application code; corrections are new entries. Deposits are written
+here only by `creditDeposit` (`packages/core/src/ledger.ts`) — the one idempotent entry point
+shared by the chain-watcher and the admin manual-credit fallback.
 
 **Deposit** / **Withdrawal** — user-facing request/tracking records with their own status
 workflow (pending → confirmed/approved → credited/completed, or rejected). On completion they
-produce a `LedgerEntry`.
+produce a `LedgerEntry`. `Deposit.source` is CHAIN (detected by chain-watcher) or MANUAL
+(admin fallback); `(network, txHash, txOutputIndex)` is unique — the idempotency key that
+stops a re-scan or watcher restart from double-crediting.
 
 **Market** — a trading pair (base/quote asset), precision + fee config.
 
@@ -48,7 +59,7 @@ ever deletable, per CLAUDE.md admin requirements.
 ## Relationships (high level)
 ```
 User ─┬─< Wallet >─┬─ Asset ─< AssetNetwork
-      ├─< LedgerEntry
+      ├─< LedgerEntry              (DerivationCounter: 1 row per network, standalone)
       ├─< Deposit
       ├─< Withdrawal
       ├─< Order >─< Trade >─ Market ─ Asset (base/quote)
@@ -64,8 +75,13 @@ User ─┬─< Wallet >─┬─ Asset ─< AssetNetwork
 - Notification records, support tickets (Phase 10/11)
 
 ## Verification status
-Migrated against a live local PostgreSQL 16 instance (`prisma migrate dev --name init`,
-migration `20260710084207_init`) and exercised end to end over HTTP: register → email
-verification → login → enable/verify/disable TOTP 2FA → 2FA-gated login → session
-list/revoke → RBAC route gating (`/admin` vs `/dashboard`) → password reset request. All
-verified working, not just type-checked.
+Migrated against a live local PostgreSQL 16 instance and exercised end to end, not just
+type-checked:
+- **Phase 1** (migration `20260710084207_init`): register → email verification → login →
+  enable/verify/disable TOTP 2FA → 2FA-gated login → session list/revoke → RBAC route gating
+  (`/admin` vs `/dashboard`) → password reset request.
+- **Phase 2** (migration `20260710102403_wallets_deposits`): HD address derivation verified
+  deterministic + against known BIP test vectors; chain-watcher run against **live BTC testnet
+  data** (caught + fixed a double-credit bug, then confirmed single credit across polls);
+  admin manual credit driven through the browser → correct balance, one ledger entry, deposit
+  CREDITED, audit row; deposit page renders derived address + QR.

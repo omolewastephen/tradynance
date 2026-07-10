@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// The Prisma client is generated into packages/core (see generator.output in
+// web/prisma/schema.prisma) so services/chain-watcher can share the exact same client and
+// money-movement logic (packages/core/src/ledger.ts) — re-exported here so existing `@/lib/
+// prisma` imports across the app don't all need to change.
+export { prisma } from "@tradynance/core";

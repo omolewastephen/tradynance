@@ -3,6 +3,44 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-10 — Phase 2: Wallets & deposits
+- **Restructured into npm workspaces**: `web/`, `packages/core/` (shared, framework-free),
+  `services/chain-watcher/`. The Prisma client now generates into `packages/core/generated`
+  so the app and the standalone watcher share the exact same client + money-movement code.
+- **`packages/core/src/ledger.ts` — `creditDeposit`**: the single, idempotent place money
+  enters a balance. Writes one append-only `LedgerEntry` + bumps the cached `Wallet.balance`
+  in one transaction; a no-op on an already-CREDITED deposit. Both the watcher and the admin
+  fallback call it, so the money-correctness invariant can't drift between processes.
+- **HD deposit-address derivation** (`packages/core/src/wallet/derivation.ts`) from a single
+  BIP-39 mnemonic: BTC testnet (BIP-84 p2wpkh via `@scure/btc-signer`) and ETH Sepolia
+  (BIP-44 coin-60 via viem). Verified deterministic and against known BIP test vectors
+  (`scripts/derive-test.ts`). Each wallet gets a monotonic `derivationIndex` from a
+  `DerivationCounter` row, assigned in the same tx as the wallet insert so addresses can't collide.
+- **Schema**: `Wallet.derivationIndex`, `DerivationCounter`, `Deposit.txOutputIndex` +
+  `source` (CHAIN/MANUAL), unique `(network, txHash, txOutputIndex)` as the on-chain
+  idempotency key. Migration `20260710102403_wallets_deposits`.
+- **Asset catalog seeded**: 16 coins / 17 networks from the spec. Only BTC_TESTNET and
+  ETH_SEPOLIA derive live addresses; the rest are catalog entries (deposit page shows a clear
+  "not enabled yet" state) until those chains are integrated.
+- **Wallet + deposit UI**: `/wallet` balance list, `/wallet/deposit/[symbol]` with network
+  selector, derived address, server-generated QR, min-deposit, memo warning, recent deposits.
+- **`services/chain-watcher`**: standalone polling process — BTC via esplora, ETH via viem
+  block-scan — recording deposits and crediting once confirmations clear the threshold.
+  **Found and fixed a real double-credit bug by running it against live BTC testnet data**:
+  the deposit upsert's `update` clause was resetting `status` to CONFIRMED each poll, which
+  downgraded an already-CREDITED deposit and let the next poll credit it again (balance
+  doubled). Fixed so the upsert only ever advances the confirmation count; `creditDeposit`
+  owns the CREDITED transition. Re-verified: credited exactly once across multiple polls.
+- **Admin manual-credit fallback** (`/admin/deposits`): finance-role-gated, creates a
+  MANUAL deposit with a synthetic txHash and credits via the same `creditDeposit` path,
+  writes an audit log. Verified end-to-end in the browser: 0.5 BTC credit → correct balance,
+  one ledger entry, deposit CREDITED, audit row.
+- **Known limitations (documented, not hidden)**: the ETH watcher scans native transfers
+  only (no ERC-20 tokens — USDT/USDC/LINK need log-based scanning) and uses an in-memory,
+  non-reorg-aware checkpoint — fine for testnet, needs hardening before real funds. Real
+  withdrawals are Phase 3. The hot-wallet mnemonic is a dev/testnet value in `.env`; production
+  must source it from a secrets manager (compliance note in CLAUDE.md still stands).
+
 ## 2026-07-10 — Phase 1: Auth & security
 - **better-auth 1.6.23** wired up with the Prisma adapter, `username` plugin, and `twoFactor`
   plugin (TOTP + backup codes). Schema for Session/Account/Verification/TwoFactor generated via

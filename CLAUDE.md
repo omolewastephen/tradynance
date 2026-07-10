@@ -28,26 +28,27 @@ code.** Flag anything that touches regulated territory rather than assuming it a
   - `workers` — BullMQ workers (withdrawal processing, notifications, scheduled jobs)
   Do not fold these into Next.js API routes even if it seems convenient short-term.
 
-## Repo layout (clean architecture)
+## Repo layout (npm workspaces — root package.json lists `web`, `packages/*`, `services/*`)
 ```
 web/  Next app
-  prisma/schema.prisma
+  prisma/schema.prisma   generator.output → ../packages/core/generated/prisma
   src/app/               routes & pages (interface layer — keep thin)
-  src/lib/               prisma singleton, auth, web3 client config, utils
-  src/server/
-    domain/              pure business rules, framework-free, UNIT-TESTED
-                          (ledger.ts, matching math, fee calc, liquidation math)
-    application/         use-cases (orchestrate domain + repos)
-    infrastructure/      prisma repositories, redis client, chain clients
+  src/lib/               auth, auth-session (RBAC), prisma re-export, wallet provisioning
   src/components/        UI
+packages/
+  core/                  shared, framework-free (imports nothing from Next). The Prisma
+                         client generates here so web + services share ONE client.
+    src/ledger.ts        creditDeposit — the one idempotent money-in entry point
+    src/wallet/          HD address derivation + wallet provisioning
+    generated/prisma/    generated client (gitignored build output)
 services/
-  matching-engine/       standalone Node/TS process
-  market-data/           standalone Node/TS process
-  chain-watcher/         standalone Node/TS process
-  workers/               BullMQ workers
-docs/ ERD.md, ARCHITECTURE.md, COMPLIANCE.md
+  chain-watcher/         standalone Node/TS process (BTC esplora + ETH block-scan)
+  matching-engine/       (Phase 5)   market-data/ (Phase 4)   workers/ (BullMQ, later)
+docs/ ERD.md, DESIGN_SYSTEM.md, CHANGELOG.md
 ```
-**Dependency rule:** outer → inner only. `domain/` imports nothing from Prisma/Next.
+**Dependency rule:** outer → inner only. `packages/core` imports nothing from Next; both the
+app and the services depend on it, never the reverse. All money movement flows through
+`packages/core/src/ledger.ts` so the invariant can't diverge between processes.
 
 ## Hard conventions
 1. **Git authorship:** commits authored **"Lewa <omolewastephen@gmail.com>"** (email taken
@@ -94,9 +95,16 @@ docs/ ERD.md, ARCHITECTURE.md, COMPLIANCE.md
    Migrated + seeded + exercised end-to-end over real HTTP against local Postgres — see
    docs/CHANGELOG.md for what was verified and what's still a stub (no real email provider yet,
    no Google/Apple OAuth — no credentials for either).
-2. ⬅ **NEXT** — Wallets & deposits: coin/network models, HD address generation, deposit address UI + QR,
-   `chain-watcher` service (1–2 chains first), manual admin-confirm fallback, ledger credits.
-3. Withdrawals: request flow, OTP/2FA/email confirmation, admin approval queue, fees,
+2. ✅ Wallets & deposits: npm-workspaces restructure (`web` + `packages/core` + `services/
+   chain-watcher`), shared `creditDeposit` ledger fn, HD address derivation (BTC testnet
+   BIP-84, ETH Sepolia BIP-44) with per-wallet `DerivationCounter` index, 16-coin/17-network
+   asset catalog seed, `/wallet` + `/wallet/deposit/[symbol]` (address/QR/min-deposit), the
+   standalone `chain-watcher` (BTC esplora + ETH block-scan), and the finance-gated admin
+   manual-credit fallback (`/admin/deposits`). Verified end-to-end incl. against live BTC
+   testnet data — caught + fixed a real double-credit idempotency bug (see docs/CHANGELOG.md).
+   Only BTC_TESTNET/ETH_SEPOLIA derive live addresses; ERC-20 tokens + reorg-safe checkpoints
+   are deferred. Hot-wallet mnemonic is dev/testnet only.
+3. ⬅ **NEXT** — Withdrawals: request flow, OTP/2FA/email confirmation, admin approval queue, fees,
    withdrawal whitelist.
 4. Markets & live data: `market-data` service, price feed, market list/coin detail pages,
    watchlist.

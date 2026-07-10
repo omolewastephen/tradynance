@@ -1,2 +1,11 @@
 .DS_Store
 *.log
+
+# Dependencies (hoisted to root by npm workspaces)
+node_modules/
+
+# Local scheduler lock
+.claude/scheduled_tasks.lock
+
+# Prisma client is generated into packages/core/generated (build output, not source)
+packages/core/generated/
