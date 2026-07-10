@@ -65,8 +65,12 @@ by `services/market-data` (polling `data-api.binance.vision`). A cache; not mone
 **Watchlist** — per-user favourited markets (unique on user+market).
 
 **Order** → **Trade** — spot order book. An `Order` is user intent (side, type, TIF, price,
-quantity, fill progress); a `Trade` is one match between a buy order and a sell order at a
-price/quantity, fees captured per side.
+quantity, fill progress, avgFillPrice); a `Trade` is one match between a buy and a sell order
+at a price/quantity, per-side fees, and `takerSide`. Placement + settlement is transactional
+via `packages/core/src/trading-engine.ts` (`placeOrder`/`cancelOrder`) at Serializable
+isolation — fills write TRADE_FILL + FEE ledger entries for both sides; a GTC-limit remainder
+rests and locks funds in the per-(user,asset) **SPOT wallet** (network="SPOT"). The
+`services/market-maker` system user quotes resting liquidity so the book is fillable.
 
 **AuditLog** — append-only action log (actor, action, entity, metadata, IP). Nothing here is
 ever deletable, per CLAUDE.md admin requirements.
@@ -113,3 +117,8 @@ type-checked:
   renders a real candlestick chart from live klines with interval switching; watchlist star
   toggles + filters; dashboard shows the correct USD portfolio total (0.5 BTC + 4 ETH →
   ~$39,213 at live prices). Caught + fixed an Intl.NumberFormat range bug in volume formatting.
+- **Phase 5** (migration `20260710170153_spot_trading`): 19-assertion direct test of matching
+  + settlement (market/limit/partial, IOC/FOK, cancel-releases-lock, insufficient funds,
+  conservation); market-maker seeded a real 6+6 book; a user order filled against MM liquidity
+  through the browser and settled exactly (BTC +0.1, USDT −6394.07 −12.79 fee, one Trade row,
+  three ledger entries). Order book + order form + open-orders/history render.

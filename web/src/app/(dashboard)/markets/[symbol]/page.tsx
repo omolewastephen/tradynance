@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowUpFromLine } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -84,11 +84,11 @@ export default async function MarketDetailPage({
         <div className="flex items-center gap-2">
           <WatchStar symbol={market.symbol} initialWatched={!!watched} />
           <Link
-            href="/withdraw"
-            className="inline-flex items-center gap-2 rounded-sm border border-border px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-surface"
+            href={`/trade/${market.symbol}`}
+            className="inline-flex items-center gap-2 rounded-sm bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            <ArrowUpFromLine className="size-4" />
-            Trade (Phase 5)
+            <ArrowLeftRight className="size-4" />
+            Trade
           </Link>
         </div>
       </div>

@@ -3,6 +3,7 @@ import {
   Wallet,
   ArrowUpFromLine,
   CandlestickChart,
+  ArrowLeftRight,
   ShieldCheck,
   Landmark,
   Banknote,
@@ -17,6 +18,7 @@ export const mainSection: NavSection = {
   items: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/markets", label: "Markets", icon: CandlestickChart },
+    { href: "/trade", label: "Trade", icon: ArrowLeftRight },
     { href: "/wallet", label: "Wallet", icon: Wallet },
     { href: "/withdraw", label: "Withdraw", icon: ArrowUpFromLine },
     { href: "/settings/security", label: "Security", icon: ShieldCheck },

@@ -3,6 +3,40 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-10 — Phase 5: Spot trading
+- **`packages/core/src/trading.ts`** — pure, unit-tested matching: price-time priority,
+  market/limit, GTC/IOC/FOK, fee math. No DB.
+- **`packages/core/src/trading-engine.ts`** — `placeOrder`/`cancelOrder`, transactional
+  settlement holding the same ledger invariant as deposits/withdrawals: crossing fills settle
+  immediately (base ↔ quote moves + fees, both taker and maker, one LedgerEntry each), a GTC
+  limit remainder rests and locks funds, IOC/MARKET leftovers cancel, FOK is all-or-nothing.
+  Runs at **Serializable** isolation so two crossing orders can't double-fill the same
+  liquidity. Trading uses a per-(user,asset) **SPOT wallet** (network="SPOT"), separate from
+  deposit wallets — a funding↔spot transfer is deferred (mirrors Binance's Funding vs Spot).
+- **Architecture note**: matching runs in-transaction (correctness-first), a deliberate
+  deviation from the "standalone in-memory matching-engine" in CLAUDE.md's stack — that's a
+  throughput optimization for later. The money-critical logic lives in `core` and is tested.
+- **`services/market-maker`** — new standalone liquidity service. A funded system user quotes
+  a 6-level bid/ask ladder around each market's live mid-price (from the Ticker cache),
+  through the same `placeOrder` path users use, so the order book looks real and user orders
+  have something to fill against. Re-centers on drift, tops up consumed levels.
+- **Trade page** `/trade/[symbol]` (+ `/trade` → BTCUSDT): the classic 3-column exchange
+  layout — candlestick chart | order book + market-trades tabs (live depth bars, spread) |
+  order form (Buy/Sell, Limit/Market, price, amount, %-slider, GTC/IOC/FOK, available balance,
+  total) — with open-orders (cancelable) + order-history tabs below and a pair selector.
+- **API**: `/api/markets/[symbol]/orderbook` (aggregated depth) and `/trades` (recent tape),
+  plus `submitOrder`/`cancelUserOrder` server actions. Wired Trade into the sidebar and the
+  coin page's Trade button.
+- **Verified end-to-end** through the browser against live Postgres: MM seeded a real
+  6+6 book, a user order **filled against MM liquidity** and settled exactly — BTC +0.1,
+  USDT −6394.07 −12.79 (0.2% taker) fee = 43593.15, one Trade row, three ledger entries
+  (quote out / fee / base in). Backed by a **19-assertion direct test** of the matching math
+  (market/limit/partial fills, IOC/FOK, cancel-releases-lock, insufficient funds, and
+  **conservation**: base nets to zero across users, quote delta equals exactly the fees).
+- **Notes**: order matching/settlement is transactional (not a separate async engine);
+  liquidity is a demo market-maker, not a real one; fees currently just leave user balances
+  (no platform fee-collection wallet yet). Order book polls every 3s (not a WS stream).
+
 ## 2026-07-10 — Phase 4: Markets & live data
 - **`services/market-data`** — new standalone poller. Fetches Binance-format 24h tickers for
   our 14 markets from `data-api.binance.vision` (public, no key; `api.binance.com` is

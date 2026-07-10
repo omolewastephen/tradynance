@@ -2,6 +2,7 @@ import { auth } from "../src/lib/auth";
 import { prisma } from "../src/lib/prisma";
 import { seedAssets } from "./seed-assets";
 import { seedMarkets } from "./seed-markets";
+import { seedMarketMaker } from "./seed-market-maker";
 
 async function upsertAdmin() {
   const email = "admin@tradynance.local";
@@ -39,6 +40,7 @@ async function main() {
   await upsertAdmin();
   await seedAssets();
   await seedMarkets();
+  await seedMarketMaker();
 }
 
 main()

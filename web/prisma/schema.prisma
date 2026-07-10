@@ -408,13 +408,16 @@ model Order {
   marketId String
   market   Market @relation(fields: [marketId], references: [id])
 
-  side           OrderSide
-  type           OrderType
-  timeInForce    TimeInForce @default(GTC)
-  price          Decimal?    @db.Decimal(36, 18) // null for market orders
-  quantity       Decimal     @db.Decimal(36, 18)
-  filledQuantity Decimal     @default(0) @db.Decimal(36, 18)
-  status         OrderStatus @default(OPEN)
+  side            OrderSide
+  type            OrderType
+  timeInForce     TimeInForce @default(GTC)
+  price           Decimal?    @db.Decimal(36, 18) // null for market orders
+  quantity        Decimal     @db.Decimal(36, 18) // base-asset quantity
+  filledQuantity  Decimal     @default(0) @db.Decimal(36, 18)
+  // Running quote total filled (Σ price×qty) and derived avg fill price, for display.
+  cumulativeQuote Decimal     @default(0) @db.Decimal(36, 18)
+  avgFillPrice    Decimal?    @db.Decimal(36, 18)
+  status          OrderStatus @default(OPEN)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,6 +425,8 @@ model Order {
   buyTrades  Trade[] @relation("BuyOrder")
   sellTrades Trade[] @relation("SellOrder")
 
+  // Order-book queries scan resting orders by market/side/status ordered by price.
+  @@index([marketId, side, status, price])
   @@index([marketId, status])
   @@index([userId])
 }
@@ -435,10 +440,11 @@ model Trade {
   sellOrderId String
   sellOrder   Order  @relation("SellOrder", fields: [sellOrderId], references: [id])
 
-  price     Decimal @db.Decimal(36, 18)
-  quantity  Decimal @db.Decimal(36, 18)
-  buyerFee  Decimal @db.Decimal(36, 18)
-  sellerFee Decimal @db.Decimal(36, 18)
+  price     Decimal   @db.Decimal(36, 18)
+  quantity  Decimal   @db.Decimal(36, 18)
+  buyerFee  Decimal   @db.Decimal(36, 18)
+  sellerFee Decimal   @db.Decimal(36, 18)
+  takerSide OrderSide // which side crossed the spread — colors the trades feed
 
   createdAt DateTime @default(now())
 

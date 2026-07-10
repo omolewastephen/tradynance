@@ -44,7 +44,10 @@ packages/
 services/
   chain-watcher/         standalone Node/TS process (BTC esplora + ETH block-scan)
   market-data/           standalone poller (Binance-format tickers → Ticker cache)
-  matching-engine/       (Phase 5)   workers/ (BullMQ, later)
+  market-maker/          standalone liquidity provider (quotes a ladder around live mid)
+  workers/               (BullMQ, later)
+  # NB: spot matching runs in-transaction in packages/core (trading-engine.ts), not a
+  # separate matching-engine process — see Phase 5 note below.
 docs/ ERD.md, DESIGN_SYSTEM.md, CHANGELOG.md
 ```
 **Dependency rule:** outer → inner only. `packages/core` imports nothing from Next; both the
@@ -120,9 +123,16 @@ app and the services depend on it, never the reverse. All money movement flows t
    valuation wired into the dashboard (hide-balance toggle) + wallet table (Total/Available/In
    order/Value USD). Verified end-to-end through the browser. Polling not WebSocket streaming
    yet; no order book / recent trades until Phase 5.
-5. ⬅ **NEXT** — Spot trading: `matching-engine` service, order form (market/limit), order book UI, trade
-   history, open orders, GTC/IOC/FOK.
-6. Portfolio & dashboard: overview, balances, PnL, asset allocation + performance charts.
+5. ✅ Spot trading: pure matching + fee math in `packages/core/src/trading.ts` (tested),
+   transactional `placeOrder`/`cancelOrder` settlement in `trading-engine.ts` (Serializable,
+   SPOT wallets, TRADE_FILL/FEE ledger, GTC/IOC/FOK), `services/market-maker` liquidity,
+   `/trade/[symbol]` 3-col UI (chart + order book/trades + order form + open-orders/history).
+   Verified end-to-end incl. a browser fill against MM liquidity + a 19-assertion core test
+   (conservation checked). **Deviation from the locked stack**: matching runs in-transaction,
+   NOT a standalone in-memory `matching-engine` process — correctness-first; the async engine
+   is a throughput optimization for later. Fees leave user balances but aren't collected to a
+   platform wallet yet; liquidity is a demo market-maker.
+6. ⬅ **NEXT** — Portfolio & dashboard: overview, balances, PnL, asset allocation + performance charts.
 7. Convert: instant asset conversion via market price + spread.
 8. Admin panel core: user management, deposit/withdrawal management, KYC review, audit logs
    (append-only, nothing deletable).
