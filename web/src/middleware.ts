@@ -8,6 +8,7 @@ import { getSessionCookie } from "better-auth/cookies";
 // signed-out users and redirects obviously-unauthenticated requests early.
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/portfolio",
   "/admin",
   "/settings",
   "/wallet",
@@ -39,6 +40,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/portfolio/:path*",
     "/admin/:path*",
     "/settings/:path*",
     "/wallet/:path*",

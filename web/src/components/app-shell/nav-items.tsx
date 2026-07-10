@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  PieChart,
   Wallet,
   ArrowUpFromLine,
   CandlestickChart,
@@ -17,6 +18,7 @@ export type NavSection = { heading?: string; items: NavItem[] };
 export const mainSection: NavSection = {
   items: [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/portfolio", label: "Portfolio", icon: PieChart },
     { href: "/markets", label: "Markets", icon: CandlestickChart },
     { href: "/trade", label: "Trade", icon: ArrowLeftRight },
     { href: "/wallet", label: "Wallet", icon: Wallet },

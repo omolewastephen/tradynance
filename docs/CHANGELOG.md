@@ -3,6 +3,26 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-11 — Phase 6: Portfolio & dashboard
+- **`/portfolio`** page: total value + 24h change, an allocation donut, a performance chart
+  with 24h/7d/30d ranges, a holdings table (amount / price / 24h% / value / allocation%), and
+  a recent-activity feed. Read-only analytics over existing data — no new tables, no migration.
+- **24h change** is real, no snapshot infra: computed from each asset's ticker 24h % against
+  current holdings (`price_24h_ago = price / (1 + pct/100)`), summed. `src/lib/portfolio.ts`.
+- **Performance chart** (`/api/portfolio/performance`): value over time = Σ(current holding ×
+  historical close) from real klines. Labeled "current holdings at historical prices" — it's a
+  legitimate "what my portfolio would've been worth" view, not a mark-to-market reconstruction
+  of past holdings (which would need snapshots). Uses real price data, immediately populated
+  (verified: 42 points over 7d, $51.4k→$52.2k).
+- **Allocation donut** is a dependency-free inline SVG (`components/charts/donut.tsx`) with a
+  categorical palette; tiny slices roll into "Other". **Recent activity** reads the append-only
+  ledger (the real movement record).
+- Wired Portfolio into the sidebar. Verified end-to-end through the browser with a diversified
+  holding (0.5 BTC + 5 ETH + 40 SOL + 8k USDT → correct $52,198 total, donut 61.5/17.2/15.3/6.0,
+  live 24h per row). No console errors.
+- **Deferred**: full cost-basis realized/unrealized PnL (needs acquisition accounting) and
+  margin balance (Phase 9) — shown as change %, not P&L, to stay honest.
+
 ## 2026-07-10 — Phase 5: Spot trading
 - **`packages/core/src/trading.ts`** — pure, unit-tested matching: price-time priority,
   market/limit, GTC/IOC/FOK, fee math. No DB.

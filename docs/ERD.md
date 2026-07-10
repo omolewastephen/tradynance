@@ -122,3 +122,7 @@ type-checked:
   conservation); market-maker seeded a real 6+6 book; a user order filled against MM liquidity
   through the browser and settled exactly (BTC +0.1, USDT −6394.07 −12.79 fee, one Trade row,
   three ledger entries). Order book + order form + open-orders/history render.
+- **Phase 6** (no migration — read-only analytics over existing tables): `/portfolio` renders
+  correct total value + real 24h change, allocation donut, holdings, and a klines-based
+  performance series (42 real points over 7d), verified in the browser with a diversified
+  holding (0.5 BTC + 5 ETH + 40 SOL + 8k USDT → $52,198).

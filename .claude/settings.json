@@ -157,7 +157,10 @@
       "Bash(sed -i '' 's|await page.fill\\(.input\\\\[inputmode=\"decimal\"\\\\]., \"0.1\"\\);.*|await page.fill\\(\"#order-amount\", \"0.1\"\\);|' trade-e2e.js)",
       "Bash(curl -s \"http://localhost:3000/api/markets/BTCUSDT/klines?interval=1h\" -o /dev/null -w \"klines: HTTP %{http_code}, %{size_download} bytes\\\\n\")",
       "Bash(curl -s \"http://localhost:3000/api/markets/BTCUSDT/orderbook\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('orderbook: bids',len\\(d['bids']\\),'asks',len\\(d['asks']\\),'spread',d['spread']\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('orderbook: bids',len\\(d['bids']\\),'asks',len\\(d['asks']\\),'spread',d['spread']\\)\")",
+      "Bash(pkill -f \"market-maker/src/index\")",
+      "Bash(node portfolio-e2e.js)",
+      "Bash(curl -s -b /tmp/t1.txt \"http://localhost:3000/api/portfolio/performance?range=7d\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

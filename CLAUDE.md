@@ -132,8 +132,12 @@ app and the services depend on it, never the reverse. All money movement flows t
    NOT a standalone in-memory `matching-engine` process — correctness-first; the async engine
    is a throughput optimization for later. Fees leave user balances but aren't collected to a
    platform wallet yet; liquidity is a demo market-maker.
-6. ⬅ **NEXT** — Portfolio & dashboard: overview, balances, PnL, asset allocation + performance charts.
-7. Convert: instant asset conversion via market price + spread.
+6. ✅ Portfolio & dashboard: `/portfolio` (total value + real 24h change from tickers,
+   allocation donut [dependency-free SVG], performance chart [Σ current-holding × historical
+   klines close, ranges 24h/7d/30d], holdings table, recent-activity feed from the ledger).
+   Read-only analytics — no new tables. Verified end-to-end. Full cost-basis realized/unrealized
+   PnL deferred (needs acquisition accounting); shown as change %, not P&L.
+7. ⬅ **NEXT** — Convert: instant asset conversion via market price + spread.
 8. Admin panel core: user management, deposit/withdrawal management, KYC review, audit logs
    (append-only, nothing deletable).
 9. Margin & futures: leverage, liquidation engine, funding rate, advanced order types
