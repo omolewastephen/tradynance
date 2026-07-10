@@ -6,7 +6,7 @@ import { getSessionCookie } from "better-auth/cookies";
 // in each protected layout/page via `requireUser` / `requireRole` — see
 // src/lib/auth-session.ts. This just avoids a flash of protected UI for
 // signed-out users and redirects obviously-unauthenticated requests early.
-const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/settings"];
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/settings", "/wallet", "/withdraw"];
 const AUTH_PAGES = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {
@@ -29,5 +29,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/settings/:path*", "/login", "/register"],
+  matcher: [
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/settings/:path*",
+    "/wallet/:path*",
+    "/withdraw/:path*",
+    "/login",
+    "/register",
+  ],
 };

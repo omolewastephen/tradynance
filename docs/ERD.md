@@ -41,11 +41,20 @@ No update/delete from application code; corrections are new entries. Deposits ar
 here only by `creditDeposit` (`packages/core/src/ledger.ts`) — the one idempotent entry point
 shared by the chain-watcher and the admin manual-credit fallback.
 
-**Deposit** / **Withdrawal** — user-facing request/tracking records with their own status
-workflow (pending → confirmed/approved → credited/completed, or rejected). On completion they
-produce a `LedgerEntry`. `Deposit.source` is CHAIN (detected by chain-watcher) or MANUAL
-(admin fallback); `(network, txHash, txOutputIndex)` is unique — the idempotency key that
-stops a re-scan or watcher restart from double-crediting.
+**Deposit** — CHAIN (chain-watcher) or MANUAL (admin fallback). `(network, txHash,
+txOutputIndex)` unique — the idempotency key stopping a re-scan from double-crediting. On
+credit, `creditDeposit` writes one positive `LedgerEntry`.
+
+**Withdrawal** — the debit side, driven by `packages/core/src/withdrawal.ts`. State machine:
+`AWAITING_CONFIRMATION` (created; funds NOT locked) → confirm (email OTP + TOTP/password) →
+`PENDING` (funds locked via `Wallet.lockedBalance`, no ledger entry yet) → admin approve →
+`COMPLETED` (one negative `LedgerEntry` for amount+fee; balance and lock both drop) OR reject
+→ `REJECTED` (lock released, no ledger entry). `confirmationCodeHash`/`confirmationExpiresAt`
+gate the confirm step (single-use, short-lived). Available balance everywhere = balance −
+lockedBalance.
+
+**WithdrawalWhitelist** — per-user trusted destination address book, network-scoped. With
+`User.withdrawalWhitelistOnly`, withdrawals may only target these.
 
 **Market** — a trading pair (base/quote asset), precision + fee config.
 
@@ -62,6 +71,7 @@ User ─┬─< Wallet >─┬─ Asset ─< AssetNetwork
       ├─< LedgerEntry              (DerivationCounter: 1 row per network, standalone)
       ├─< Deposit
       ├─< Withdrawal
+      ├─< WithdrawalWhitelist
       ├─< Order >─< Trade >─ Market ─ Asset (base/quote)
       ├─< AuditLog (as actor)
       ├─< LoginHistory
@@ -85,3 +95,9 @@ type-checked:
   data** (caught + fixed a double-credit bug, then confirmed single credit across polls);
   admin manual credit driven through the browser → correct balance, one ledger entry, deposit
   CREDITED, audit row; deposit page renders derived address + QR.
+- **Phase 3** (migrations `20260710131743_withdrawal_status_enum` +
+  `20260710131744_withdrawals`): 21-assertion direct test of the reserve/settle/release money
+  math (idempotency + insufficient-funds); full flow driven through the browser → request →
+  email OTP (from log) → confirm (funds locked, no ledger entry) → admin approve (balance
+  debited to exactly amount+fee, one WITHDRAWAL ledger row, lock released, COMPLETED + txHash +
+  audit) → separate withdrawal rejected (lock released, balance unchanged, no ledger entry).

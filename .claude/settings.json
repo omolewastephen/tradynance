@@ -132,7 +132,14 @@
       "Bash(git rm *)",
       "Bash(git commit -q -m ' *)",
       "Bash(node phase2-shots.js)",
-      "Bash(node polish-shots.js)"
+      "Bash(node polish-shots.js)",
+      "Bash(rm -f /tmp/t1.txt)",
+      "Bash(curl -s -c /tmp/t1.txt -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -H \"Origin: http://localhost:3000\" -d '{\"email\":\"trader1@example.com\",\"password\":\"Password123\"}')",
+      "Bash(python3 -c \"import json,sys;print\\('login:',json.load\\(sys.stdin\\).get\\('user',{}\\).get\\('email'\\)\\)\")",
+      "Bash(curl -s -b /tmp/t1.txt http://localhost:3000/withdraw)",
+      "Bash(node withdraw-e2e.js)",
+      "Bash(node withdraw-approve.js)",
+      "Bash(grep -iE \"node_modules|\\\\.env$|generated/prisma\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth"

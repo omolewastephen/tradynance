@@ -7,7 +7,7 @@ export default async function AdminPage() {
   const session = await requireAdmin();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex animate-fade-rise flex-col gap-6">
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle>Admin</CardTitle>
@@ -20,6 +20,9 @@ export default async function AdminPage() {
         <CardContent className="flex flex-col gap-2">
           <Link href="/admin/deposits" className="text-accent hover:underline">
             Deposits — manual credit &amp; pending queue →
+          </Link>
+          <Link href="/admin/withdrawals" className="text-accent hover:underline">
+            Withdrawals — approval queue →
           </Link>
         </CardContent>
       </Card>

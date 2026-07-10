@@ -4,19 +4,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AntiPhishingForm } from "./anti-phishing-form";
 import { TwoFactorSection } from "./two-factor-section";
 import { SessionsSection } from "./sessions-section";
+import { WhitelistSection } from "./whitelist-section";
 
 export default async function SecuritySettingsPage() {
   const session = await requireUser();
 
-  const [user, loginHistory] = await Promise.all([
+  const [user, loginHistory, whitelist] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: session.user.id },
-      select: { antiPhishingCode: true, twoFactorEnabled: true },
+      select: {
+        antiPhishingCode: true,
+        twoFactorEnabled: true,
+        withdrawalWhitelistOnly: true,
+      },
     }),
     prisma.loginHistory.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       take: 10,
+    }),
+    prisma.withdrawalWhitelist.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -39,6 +48,28 @@ export default async function SecuritySettingsPage() {
         </CardHeader>
         <CardContent>
           <AntiPhishingForm initialCode={user.antiPhishingCode} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Withdrawal address whitelist</CardTitle>
+          <CardDescription>
+            Trusted destinations for withdrawals. Optionally restrict withdrawals to only
+            these addresses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WhitelistSection
+            entries={whitelist.map((w) => ({
+              id: w.id,
+              label: w.label,
+              network: w.network,
+              address: w.address,
+              memo: w.memo,
+            }))}
+            whitelistOnly={user.withdrawalWhitelistOnly}
+          />
         </CardContent>
       </Card>
 

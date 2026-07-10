@@ -71,6 +71,9 @@ model User {
 
   antiPhishingCode String? // shown in transactional emails so users can spot spoofs
 
+  // When true, withdrawals may only go to addresses in this user's WithdrawalWhitelist.
+  withdrawalWhitelistOnly Boolean @default(false)
+
   referralCode String  @unique
   referredById String?
   referredBy   User?   @relation("Referrals", fields: [referredById], references: [id])
@@ -79,13 +82,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  wallets       Wallet[]
-  ledgerEntries LedgerEntry[]
-  deposits      Deposit[]
-  withdrawals   Withdrawal[]
-  orders        Order[]
-  auditLogs     AuditLog[]
-  loginHistory  LoginHistory[]
+  wallets             Wallet[]
+  ledgerEntries       LedgerEntry[]
+  deposits            Deposit[]
+  withdrawals         Withdrawal[]
+  withdrawalWhitelist WithdrawalWhitelist[]
+  orders              Order[]
+  auditLogs           AuditLog[]
+  loginHistory        LoginHistory[]
 
   displayUsername  String?
   twoFactorEnabled Boolean?    @default(false)
@@ -261,10 +265,11 @@ enum DepositSource {
 }
 
 enum WithdrawalStatus {
-  PENDING
-  APPROVED
+  AWAITING_CONFIRMATION // created, waiting on email OTP + 2FA/password; funds NOT yet locked
+  PENDING // confirmed, funds locked, awaiting admin approval
+  APPROVED // admin approved, being sent on-chain
   PROCESSING
-  COMPLETED
+  COMPLETED // settled: ledger debit written, funds left the account
   REJECTED
   CANCELLED
 }
@@ -281,12 +286,37 @@ model Withdrawal {
   destinationAddress String
   destinationMemo    String?
   txHash             String?
-  status             WithdrawalStatus @default(PENDING)
-  approvedById       String?
-  approvedAt         DateTime?
-  createdAt          DateTime         @default(now())
+  status             WithdrawalStatus @default(AWAITING_CONFIRMATION)
+
+  // Confirmation gate — an email OTP (hashed, single-use, short-lived). The second factor
+  // (TOTP if 2FA enabled, else password) is verified live at confirm time, not stored.
+  confirmationCodeHash  String?
+  confirmationExpiresAt DateTime?
+  confirmedAt           DateTime?
+
+  approvedById   String?
+  approvedAt     DateTime?
+  rejectedReason String?
+  createdAt      DateTime  @default(now())
 
   @@index([userId, status])
+}
+
+// Per-user address book of trusted withdrawal destinations. Network-scoped because an
+// address is valid for a chain, not a single token (one ERC-20 address receives any ERC-20).
+// If a user has `withdrawalWhitelistOnly` set, withdrawals may only target these.
+model WithdrawalWhitelist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  network   String
+  address   String
+  memo      String?
+  label     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, network, address])
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

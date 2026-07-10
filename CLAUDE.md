@@ -104,9 +104,15 @@ app and the services depend on it, never the reverse. All money movement flows t
    testnet data — caught + fixed a real double-credit idempotency bug (see docs/CHANGELOG.md).
    Only BTC_TESTNET/ETH_SEPOLIA derive live addresses; ERC-20 tokens + reorg-safe checkpoints
    are deferred. Hot-wallet mnemonic is dev/testnet only.
-3. ⬅ **NEXT** — Withdrawals: request flow, OTP/2FA/email confirmation, admin approval queue, fees,
-   withdrawal whitelist.
-4. Markets & live data: `market-data` service, price feed, market list/coin detail pages,
+3. ✅ Withdrawals: shared `packages/core/src/withdrawal.ts` (reserve→settle→release, all
+   idempotent; 21-assertion direct test), two-factor confirmation (email OTP always + TOTP if
+   2FA else password), `/withdraw` two-step UI with live fee/available, withdrawal-address
+   whitelist + "whitelist-only" toggle in Settings, and the finance-gated admin approval queue
+   (`/admin/withdrawals`, approve→settle / reject→release, audit-logged). Verified end-to-end
+   through the real browser against live Postgres (see docs/CHANGELOG.md). Stubbed: no on-chain
+   broadcast (approve settles the ledger + records an admin-provided tx hash); email OTP logs
+   to console.
+4. ⬅ **NEXT** — Markets & live data: `market-data` service, price feed, market list/coin detail pages,
    watchlist.
 5. Spot trading: `matching-engine` service, order form (market/limit), order book UI, trade
    history, open orders, GTC/IOC/FOK.

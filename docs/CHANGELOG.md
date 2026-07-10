@@ -3,6 +3,42 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-10 — Phase 3: Withdrawals
+- **`packages/core/src/withdrawal.ts`** — the debit side of the ledger, same discipline as
+  `creditDeposit`. Model: **reserve → settle**, with **release** on reject/cancel.
+  `reserveWithdrawalFunds` locks amount+fee against the wallet (available = balance − locked)
+  with no balance change or ledger entry yet; `settleWithdrawal` writes ONE append-only
+  −(amount+fee) WITHDRAWAL entry, drops balance and lock in one tx; `releaseWithdrawal`
+  unlocks without moving money. All idempotent. 21-assertion direct test in
+  `scripts/withdrawal-test.ts` (lock/settle/release math, idempotency, insufficient-funds).
+- **Two-factor withdrawal confirmation**: always an **email OTP** (6-digit, hashed,
+  single-use, 10-min TTL, logged to console in dev), plus a second factor — **TOTP** if the
+  account has 2FA (verified via `auth.api.verifyTOTP`, which works for an already-authenticated
+  user), else the **account password** (`auth.api.verifyPassword`). Covers the spec's
+  OTP/email/2FA verification items with real, verifiable checks.
+- **Flow / states**: request → `AWAITING_CONFIRMATION` (funds NOT yet locked) → confirm →
+  `PENDING` (funds locked) → admin approve → `COMPLETED` (settled) or reject → `REJECTED`
+  (lock released). User can cancel while pending. `(network,txOutputIndex)`-style idempotency
+  keys not needed here — the state machine + idempotent core fns guard double-settlement.
+- **UI**: `/withdraw` two-step form (asset/network/address/amount → email-OTP + 2FA/password
+  confirm) with live fee + available-balance + total-debit display and whitelist quick-pick;
+  **withdrawal address whitelist** management in Settings → Security (add/remove + a
+  "whitelist-only" toggle that blocks non-listed destinations); **admin approval queue** at
+  `/admin/withdrawals` (approve→settle with optional tx hash, reject→release, both audit-logged).
+- **Schema**: `Withdrawal` confirmation fields + `AWAITING_CONFIRMATION` status,
+  `WithdrawalWhitelist` model, `User.withdrawalWhitelistOnly`. Migrations
+  `20260710131743_withdrawal_status_enum` + `20260710131744_withdrawals` — split in two
+  because Postgres won't let a newly-added enum value be used (as a column default) in the
+  same transaction that adds it.
+- **Verified end-to-end** against live local Postgres through the real browser UI: request →
+  OTP (read from log) → confirm (funds locked, no ledger entry, available reduced) → admin
+  approve (balance debited to exactly amount+fee, lock released, one WITHDRAWAL ledger row,
+  COMPLETED + txHash + audit) → and a second withdrawal rejected (lock released, balance
+  unchanged, no ledger entry). Not just type-checked.
+- **Still stubbed**: no real on-chain broadcast — "approve" settles the ledger and records a
+  tx hash the admin provides; actual signing/sending from the hot wallet is future work. Email
+  OTP logs to console (no email provider yet).
+
 ## 2026-07-10 — UI polish pass (app shell, brand, coin icons)
 - Moved from a thin top-nav to a real **app shell**: persistent left **sidebar** (lucide
   icons, active-state highlighting, admin section) + a **glass sticky topbar** (user chip +

@@ -69,13 +69,13 @@ export default async function DashboardPage() {
             <ArrowDownToLine className="size-4" />
             Deposit
           </Link>
-          <span
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-sm border border-border px-4 py-2 text-sm text-foreground-muted"
-            title="Withdrawals land in Phase 3"
+          <Link
+            href="/withdraw"
+            className="inline-flex items-center gap-2 rounded-sm border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-surface"
           >
             <ArrowUpFromLine className="size-4" />
             Withdraw
-          </span>
+          </Link>
           <Link
             href="/settings/security"
             className="inline-flex items-center gap-2 rounded-sm border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-surface"
