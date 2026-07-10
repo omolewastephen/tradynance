@@ -86,9 +86,15 @@ docs/ ERD.md, ARCHITECTURE.md, COMPLIANCE.md
    by hand since `ui.shadcn.com` isn't reachable from this environment), Prisma 6.19.3 schema
    for the core ERD (`docs/ERD.md`). Repo pushed to GitHub (private,
    github.com/omolewastephen/tradynance). No Docker/CI yet — deferred per working agreement.
-1. ⬅ **NEXT** — Auth & security: registration/login, email verification, TOTP 2FA, RBAC,
-   session/device management, login history, anti-phishing code.
-2. Wallets & deposits: coin/network models, HD address generation, deposit address UI + QR,
+1. ✅ Auth & security: better-auth (Prisma adapter, username + twoFactor plugins), registration
+   (email/username/password/country/phone/referral/KYC-agreement), required email verification,
+   login with remember-me + full TOTP 2FA step-up, forgot/reset password, 2FA enable/disable UI
+   (QR + backup codes), session list/revoke, append-only `LoginHistory`, anti-phishing code,
+   RBAC (`middleware.ts` optimistic check + `auth-session.ts` real server-side enforcement).
+   Migrated + seeded + exercised end-to-end over real HTTP against local Postgres — see
+   docs/CHANGELOG.md for what was verified and what's still a stub (no real email provider yet,
+   no Google/Apple OAuth — no credentials for either).
+2. ⬅ **NEXT** — Wallets & deposits: coin/network models, HD address generation, deposit address UI + QR,
    `chain-watcher` service (1–2 chains first), manual admin-confirm fallback, ledger credits.
 3. Withdrawals: request flow, OTP/2FA/email confirmation, admin approval queue, fees,
    withdrawal whitelist.

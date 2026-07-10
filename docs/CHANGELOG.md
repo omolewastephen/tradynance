@@ -3,6 +3,42 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-10 — Phase 1: Auth & security
+- **better-auth 1.6.23** wired up with the Prisma adapter, `username` plugin, and `twoFactor`
+  plugin (TOTP + backup codes). Schema for Session/Account/Verification/TwoFactor generated via
+  `@better-auth/cli generate` against our hand-written schema and reconciled — the CLI's remote
+  fetch worked here (unlike the shadcn CLI in Phase 0).
+- **Registration**: email, username, password+confirm, country, phone, referral code, KYC/ToS
+  agreement (`src/app/(auth)/register`). Referral code resolution and this user's own generated
+  code happen in a `user.create` databaseHook (`src/lib/auth.ts`) — found and fixed a real bug
+  here: better-auth silently strips any field from a hook's return value that isn't declared in
+  `user.additionalFields`, even if it's a genuine Prisma column, so `referralCode` had to be
+  declared there before it would actually reach the database.
+- **Email verification** required before login (`requireEmailVerification: true`), auto-signs-in
+  on verification. **Login** supports remember-me and a full 2FA step-up flow
+  (`twoFactorRedirect` → TOTP code entry). **Forgot/reset password** flow included.
+- **2FA settings UI**: enable (password → QR + backup codes → confirm code) and disable
+  (password confirm), `src/app/(dashboard)/settings/security/two-factor-section.tsx`.
+- **Sessions & login history**: list/revoke active sessions via better-auth's session API;
+  `LoginHistory` is a separate append-only table (not the ephemeral `Session` table) written via
+  a `session.create` databaseHook, so it survives sign-out/expiry.
+- **Anti-phishing code**: custom `User.antiPhishingCode` field, settable via a server action.
+- **RBAC**: `src/middleware.ts` does an edge-safe optimistic cookie check only; real
+  role/status enforcement is server-side in `src/lib/auth-session.ts`
+  (`requireUser`/`requireRole`/`requireAdmin`), since role can't be trusted from a cookie alone.
+- Real transactional email is not wired up — verification/reset links are logged to the server
+  console (`TODO(Phase 1 follow-up)` markers in `src/lib/auth.ts`). Needs Resend/SendGrid before
+  this is usable outside local dev. Google/Apple OAuth login from the spec were **not** built —
+  no OAuth app credentials exist yet for either provider.
+- **PostgreSQL 16 installed locally via Homebrew** (no bottle for this environment, ~1hr+
+  source build) to run a real migration and end-to-end test rather than only type-checking.
+  Migration `20260710084207_init` applied; full flow (register → verify → login → enable/verify
+  2FA → 2FA-gated login → list/revoke sessions → RBAC on `/admin` vs `/dashboard` → password
+  reset request) exercised over real HTTP against the real database — see docs/ERD.md.
+- Seed script (`prisma/seed.ts`, `npm run db:seed`) creates a SUPER_ADMIN via the real
+  `auth.api.signUpEmail` path (not a raw Prisma insert) so password hashing goes through the
+  same code as real users.
+
 ## 2026-07-10 — Phase 0: Foundation
 - Repo created (`github.com/omolewastephen/tradynance`, private), local git author set to
   `Lewa <omolewastephen@gmail.com>` for this repo only (doesn't touch global git config).

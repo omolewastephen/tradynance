@@ -66,6 +66,8 @@ model User {
   country String?
   phone   String?
 
+  antiPhishingCode String? // shown in transactional emails so users can spot spoofs
+
   referralCode String  @unique
   referredById String?
   referredBy   User?   @relation("Referrals", fields: [referredById], references: [id])
@@ -80,9 +82,18 @@ model User {
   withdrawals   Withdrawal[]
   orders        Order[]
   auditLogs     AuditLog[]
+  loginHistory  LoginHistory[]
+
+  displayUsername  String?
+  twoFactorEnabled Boolean?    @default(false)
+  referralCodeUsed String?
+  sessions         Session[]
+  accounts         Account[]
+  twofactors       TwoFactor[]
 
   @@index([status])
   @@index([kycStatus])
+  @@map("user")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -163,6 +174,7 @@ enum LedgerEntryStatus {
 
 // Append-only. No update/delete from application code — corrections are new entries
 // (e.g. an ADJUSTMENT or a reversing entry referencing the original by id in `note`).
+
 model LedgerEntry {
   id       String @id @default(cuid())
   walletId String
@@ -346,6 +358,7 @@ model Trade {
 // ─────────────────────────────────────────────────────────────────────────
 
 // Nothing here is ever deleted or updated by application code.
+
 model AuditLog {
   id         String   @id @default(cuid())
   actorId    String?
@@ -359,4 +372,82 @@ model AuditLog {
 
   @@index([actorId])
   @@index([entityType, entityId])
+}
+
+// Append-only record of every sign-in, distinct from the (ephemeral, deletable) Session
+// table — written via a better-auth session.create databaseHook so it survives sign-out
+// and session expiry cleanup.
+
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
 }
