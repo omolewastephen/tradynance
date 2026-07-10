@@ -1,7 +1,9 @@
-import Link from "next/link";
-
 import { requireUser } from "@/lib/auth-session";
-import { SignOutButton } from "@/components/sign-out-button";
+import { Sidebar } from "@/components/app-shell/sidebar";
+import { MobileNav } from "@/components/app-shell/mobile-nav";
+import { Topbar } from "@/components/app-shell/topbar";
+
+const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "FINANCE", "COMPLIANCE", "SUPPORT"];
 
 export default async function DashboardLayout({
   children,
@@ -9,36 +11,18 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await requireUser();
+  const isAdmin = ADMIN_ROLES.includes(session.user.role as string);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="flex items-center justify-between border-b border-border-subtle px-6 py-4">
-        <Link href="/dashboard" className="font-display text-lg font-semibold">
-          Tradynance
-        </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/dashboard" className="text-foreground-muted hover:text-foreground">
-            Overview
-          </Link>
-          <Link href="/wallet" className="text-foreground-muted hover:text-foreground">
-            Wallet
-          </Link>
-          <Link
-            href="/settings/security"
-            className="text-foreground-muted hover:text-foreground"
-          >
-            Security
-          </Link>
-          {["SUPER_ADMIN", "ADMIN"].includes(session.user.role as string) && (
-            <Link href="/admin" className="text-foreground-muted hover:text-foreground">
-              Admin
-            </Link>
-          )}
-          <span className="text-foreground-muted">{session.user.email}</span>
-          <SignOutButton />
-        </nav>
-      </header>
-      <main className="mx-auto max-w-5xl p-6">{children}</main>
+    <div className="flex min-h-screen bg-background text-foreground">
+      <Sidebar isAdmin={isAdmin} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar email={session.user.email} />
+        <MobileNav isAdmin={isAdmin} />
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

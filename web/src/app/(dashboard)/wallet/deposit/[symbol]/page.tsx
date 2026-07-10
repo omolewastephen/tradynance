@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateWallet } from "@/lib/wallet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CoinIcon } from "@/components/brand/coin-icon";
 import { CopyAddress } from "./copy-address";
 
 export default async function DepositPage({
@@ -42,13 +43,20 @@ export default async function DepositPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex animate-fade-rise flex-col gap-6">
       <div>
         <Link href="/wallet" className="text-sm text-accent hover:underline">
           ← Wallet
         </Link>
-        <h1 className="mt-1 font-display text-h1">Deposit {asset.symbol}</h1>
-        <p className="text-foreground-muted">{asset.name}</p>
+        <div className="mt-1 flex items-center gap-3">
+          <CoinIcon symbol={asset.symbol} size={40} />
+          <div>
+            <h1 className="font-display text-h1 leading-none tracking-tight">
+              Deposit {asset.symbol}
+            </h1>
+            <p className="text-foreground-muted">{asset.name}</p>
+          </div>
+        </div>
       </div>
 
       {asset.networks.length > 1 && (

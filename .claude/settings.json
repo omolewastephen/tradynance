@@ -129,7 +129,10 @@
       "Bash(sed -i '' 's/timeout: 15000/timeout: 40000/' deposit-test.js)",
       "Bash(pkill -f \"chain-watcher/src/index\")",
       "Bash(grep -iE \"generated|node_modules|\\\\.env$\")",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(node phase2-shots.js)",
+      "Bash(node polish-shots.js)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth"

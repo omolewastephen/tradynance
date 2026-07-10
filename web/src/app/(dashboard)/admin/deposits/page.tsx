@@ -26,7 +26,7 @@ export default async function AdminDepositsPage() {
   ]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex animate-fade-rise flex-col gap-6">
       <h1 className="font-display text-h1">Deposits</h1>
 
       <Card>

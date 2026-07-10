@@ -8,8 +8,7 @@ export const metadata: Metadata = { title: "Reset password — Tradynance" };
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-md">
+    <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-display text-h3">Reset your password</CardTitle>
           <CardDescription>
@@ -22,6 +21,5 @@ export default function ForgotPasswordPage() {
           <ForgotPasswordForm />
         </CardContent>
       </Card>
-    </div>
   );
 }

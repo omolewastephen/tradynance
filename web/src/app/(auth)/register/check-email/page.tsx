@@ -7,8 +7,7 @@ export const metadata: Metadata = { title: "Check your email — Tradynance" };
 
 export default function CheckEmailPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-md">
+    <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-display text-h3">Check your email</CardTitle>
           <CardDescription>
@@ -28,6 +27,5 @@ export default function CheckEmailPage() {
           </p>
         </CardContent>
       </Card>
-    </div>
   );
 }

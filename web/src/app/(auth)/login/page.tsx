@@ -9,8 +9,7 @@ export const metadata: Metadata = { title: "Sign in — Tradynance" };
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-6">
-      <Card className="w-full max-w-md">
+    <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-display text-h3">Sign in</CardTitle>
           <CardDescription>
@@ -26,6 +25,5 @@ export default function LoginPage() {
           </Suspense>
         </CardContent>
       </Card>
-    </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,8 @@ export function SignOutButton() {
         router.refresh();
       }}
     >
-      Sign out
+      <LogOut className="size-4" />
+      <span className="hidden sm:inline">Sign out</span>
     </Button>
   );
 }

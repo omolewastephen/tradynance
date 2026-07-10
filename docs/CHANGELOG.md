@@ -3,6 +3,25 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-10 — UI polish pass (app shell, brand, coin icons)
+- Moved from a thin top-nav to a real **app shell**: persistent left **sidebar** (lucide
+  icons, active-state highlighting, admin section) + a **glass sticky topbar** (user chip +
+  sign out). Collapses to a horizontal scroll nav on mobile — verified responsive at 390px.
+- **Logo mark**: inline SVG (a "T" with a rising-arrow/candlestick motif in brand green),
+  `components/brand/logo.tsx`. Added to the sidebar and a new `(auth)` layout with an ambient
+  brand glow behind the auth cards.
+- **Real coin icons**: copied the 16 coins we list from `cryptocurrency-icons` into
+  `public/coins/` (then removed the 400-icon package — the SVGs are static now), rendered via
+  `components/brand/coin-icon.tsx` with a generic fallback (TON has no icon in the set).
+- **Dashboard** rebuilt as an overview: portfolio hero (with honest "$0.00 / valuation lands
+  in Phase 4" framing — no fake PnL), a 4-up stat-tile row (assets held / KYC / role / status),
+  quick actions, and a fund-your-account card. **Wallet** table got coin icons, denser rows,
+  and hover states.
+- **Subtle motion**: a 220ms `fade-rise` entrance on page roots (transform+opacity only,
+  `prefers-reduced-motion`-aware). No layout-animating, no decorative-only motion.
+- Deliberately did this as one pass after the core screens existed (per the working
+  agreement) rather than restyling each phase. Full build + lint clean; no console errors.
+
 ## 2026-07-10 — Phase 2: Wallets & deposits
 - **Restructured into npm workspaces**: `web/`, `packages/core/` (shared, framework-free),
   `services/chain-watcher/`. The Prisma client now generates into `packages/core/generated`
