@@ -88,6 +88,7 @@ model User {
   withdrawals         Withdrawal[]
   withdrawalWhitelist WithdrawalWhitelist[]
   orders              Order[]
+  conversions         Conversion[]
   auditLogs           AuditLog[]
   loginHistory        LoginHistory[]
   watchlist           Watchlist[]
@@ -116,13 +117,15 @@ model Asset {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  networks      AssetNetwork[]
-  wallets       Wallet[]
-  ledgerEntries LedgerEntry[]
-  deposits      Deposit[]
-  withdrawals   Withdrawal[]
-  baseMarkets   Market[]       @relation("MarketBase")
-  quoteMarkets  Market[]       @relation("MarketQuote")
+  networks       AssetNetwork[]
+  wallets        Wallet[]
+  ledgerEntries  LedgerEntry[]
+  deposits       Deposit[]
+  withdrawals    Withdrawal[]
+  baseMarkets    Market[]       @relation("MarketBase")
+  quoteMarkets   Market[]       @relation("MarketQuote")
+  conversionFrom Conversion[]   @relation("ConvertFrom")
+  conversionTo   Conversion[]   @relation("ConvertTo")
 }
 
 model AssetNetwork {
@@ -318,6 +321,25 @@ model WithdrawalWhitelist {
 
   @@unique([userId, network, address])
   @@index([userId])
+}
+
+// Instant asset conversion (swap) record. Settlement is a pair of CONVERSION ledger entries
+// (see packages/core/src/convert.ts); this row is the user-facing history with the effective
+// rate. `rate` = toAmount / fromAmount (already net of spread).
+model Conversion {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  fromAssetId String
+  fromAsset   Asset    @relation("ConvertFrom", fields: [fromAssetId], references: [id])
+  toAssetId   String
+  toAsset     Asset    @relation("ConvertTo", fields: [toAssetId], references: [id])
+  fromAmount  Decimal  @db.Decimal(36, 18)
+  toAmount    Decimal  @db.Decimal(36, 18)
+  rate        Decimal  @db.Decimal(36, 18)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

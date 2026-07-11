@@ -64,6 +64,10 @@ by `services/market-data` (polling `data-api.binance.vision`). A cache; not mone
 
 **Watchlist** — per-user favourited markets (unique on user+market).
 
+**Conversion** — instant-swap history: from/to asset, amounts, effective rate (net of spread).
+Settlement is a pair of CONVERSION ledger entries (`packages/core/src/convert.ts`), operating
+on SPOT wallets; this row is the user-facing record.
+
 **Order** → **Trade** — spot order book. An `Order` is user intent (side, type, TIF, price,
 quantity, fill progress, avgFillPrice); a `Trade` is one match between a buy and a sell order
 at a price/quantity, per-side fees, and `takerSide`. Placement + settlement is transactional
@@ -126,3 +130,7 @@ type-checked:
   correct total value + real 24h change, allocation donut, holdings, and a klines-based
   performance series (42 real points over 7d), verified in the browser with a diversified
   holding (0.5 BTC + 5 ETH + 40 SOL + 8k USDT → $52,198).
+- **Phase 7** (migration `20260710235710_convert`): 8-assertion direct test of convert
+  (spread, debit/credit, two CONVERSION ledger entries, value=in×(1−spread), same-asset +
+  insufficient rejected); browser convert 6400 USDT → 0.09961909 BTC settled exactly (USDT
+  −6400, two ledger rows, Conversion history row).

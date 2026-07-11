@@ -15,6 +15,7 @@ const PROTECTED_PREFIXES = [
   "/withdraw",
   "/markets",
   "/trade",
+  "/convert",
 ];
 const AUTH_PAGES = ["/login", "/register"];
 
@@ -47,6 +48,7 @@ export const config = {
     "/withdraw/:path*",
     "/markets/:path*",
     "/trade/:path*",
+    "/convert/:path*",
     "/login",
     "/register",
   ],

@@ -6,5 +6,6 @@ export * from "./withdrawal.js";
 export { matchOrder, feeFor } from "./trading.js";
 export type { Side, RestingOrder, IncomingOrder, Fill, MatchResult } from "./trading.js";
 export * from "./trading-engine.js";
+export * from "./convert.js";
 export * from "./wallet/derivation.js";
 export * from "./wallet/provision.js";

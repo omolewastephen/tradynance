@@ -3,6 +3,24 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-11 — Phase 7: Convert
+- **`packages/core/src/convert.ts`** — instant asset swap, same ledger discipline as the rest:
+  debit the from-asset and credit the to-asset in ONE transaction, each a CONVERSION ledger
+  entry. `toAmount = fromAmount × (priceFrom/priceTo) × (1 − spread)`; the platform keeps a
+  spread (`CONVERT_SPREAD_BPS`, default 0.30%), so value out = value in × (1 − spread) — the
+  spread is platform revenue, same pattern as trade fees. Prices come from the Ticker cache
+  and are **re-priced server-side at execution**, so a stale client quote can't be exploited.
+  Operates on SPOT wallets. Records a `Conversion` row for history.
+- **Schema**: `Conversion` model (from/to asset, amounts, effective rate). Migration
+  `20260710235710_convert`.
+- **`/convert`** page: a from/to swap card (asset selectors with SPOT balances, amount, a
+  live server-priced quote showing rate + spread, a swap-direction button) and a conversion
+  history table. Wired into the sidebar.
+- **Verified**: 8-assertion direct test (spread applied, correct debit/credit, two CONVERSION
+  ledger entries, Conversion row, value = in × (1−spread), same-asset + insufficient-funds
+  rejected) plus a real browser convert — 6400 USDT → 0.09961909 BTC, settled exactly (USDT
+  −6400, BTC credited, two ledger rows, history row with rate). No console errors.
+
 ## 2026-07-11 — Phase 6: Portfolio & dashboard
 - **`/portfolio`** page: total value + 24h change, an allocation donut, a performance chart
   with 24h/7d/30d ranges, a holdings table (amount / price / 24h% / value / allocation%), and

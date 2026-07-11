@@ -137,8 +137,11 @@ app and the services depend on it, never the reverse. All money movement flows t
    klines close, ranges 24h/7d/30d], holdings table, recent-activity feed from the ledger).
    Read-only analytics — no new tables. Verified end-to-end. Full cost-basis realized/unrealized
    PnL deferred (needs acquisition accounting); shown as change %, not P&L.
-7. ⬅ **NEXT** — Convert: instant asset conversion via market price + spread.
-8. Admin panel core: user management, deposit/withdrawal management, KYC review, audit logs
+7. ✅ Convert: `packages/core/src/convert.ts` (transactional swap, SPOT wallets, price×spread,
+   two CONVERSION ledger entries, Conversion history row; server-re-priced), `/convert` swap
+   UI + history, wired to nav. 8-assertion core test + browser-verified. Spread is platform
+   revenue (unmodeled like trade fees).
+8. ⬅ **NEXT** — Admin panel core: user management, deposit/withdrawal management, KYC review, audit logs
    (append-only, nothing deletable).
 9. Margin & futures: leverage, liquidation engine, funding rate, advanced order types
    (OCO, trailing stop, iceberg, reduce-only).

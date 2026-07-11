@@ -162,7 +162,10 @@
       "Bash(node portfolio-e2e.js)",
       "Bash(curl -s -b /tmp/t1.txt \"http://localhost:3000/api/portfolio/performance?range=7d\")",
       "Bash(pkill -f \"scripts/dev.sh\")",
-      "Bash(pkill -f \"dev:app\")"
+      "Bash(pkill -f \"dev:app\")",
+      "Bash(perl -0pi -e 's/\\(  \"\\\\/trade\",\\\\n\\)/$1  \"\\\\/convert\",\\\\n/' src/middleware.ts)",
+      "Bash(perl -0pi -e 's/\\(    \"\\\\/trade\\\\/:path\\\\*\",\\\\n\\)/$1    \"\\\\/convert\\\\/:path*\",\\\\n/' src/middleware.ts)",
+      "Bash(node convert-e2e.js)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",
