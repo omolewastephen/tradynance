@@ -86,6 +86,12 @@ The standalone `services/liquidation-engine` marks OPEN positions to the live Ti
 force-closes any that breach maintenance margin, and accrues funding each interval. Cross margin
 and advanced order types (OCO/trailing/iceberg/reduce-only) are deferred.
 
+**Notification** — in-app user notifications (`NotificationType`: DEPOSIT/WITHDRAWAL/TRADE/
+LIQUIDATION/REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), written by the core money functions
+(in-tx, via `packages/core/src/notifications.ts`) and the app/service layers (post-tx). `read`
+flag drives the topbar bell's unread badge. Not money — a failed insert never rolls back a
+balance change.
+
 **AuditLog** — append-only action log (actor, action, entity, metadata, IP). Nothing here is
 ever deletable, per CLAUDE.md admin requirements.
 

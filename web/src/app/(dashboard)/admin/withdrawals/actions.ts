@@ -2,13 +2,39 @@
 
 import { revalidatePath } from "next/cache";
 
-import { settleWithdrawal, releaseWithdrawal, type PrismaClient } from "@tradynance/core";
+import {
+  settleWithdrawal,
+  releaseWithdrawal,
+  notify,
+  type PrismaClient,
+} from "@tradynance/core";
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 
 const FINANCE_ROLES = ["SUPER_ADMIN", "ADMIN", "FINANCE"] as const;
 
 export type AdminWithdrawalResult = { ok: true } | { ok: false; error: string };
+
+/** Notify the withdrawal's owner of a status change (post-tx). */
+async function notifyWithdrawal(withdrawalId: string, completed: boolean, reason?: string) {
+  const w = await prisma.withdrawal.findUnique({
+    where: { id: withdrawalId },
+    include: { asset: { select: { symbol: true } } },
+  });
+  if (!w) return;
+  await notify(prisma as PrismaClient, {
+    userId: w.userId,
+    type: "WITHDRAWAL",
+    title: completed ? "Withdrawal completed" : "Withdrawal rejected",
+    body: completed
+      ? `Your withdrawal of ${w.amount.toString()} ${w.asset.symbol} has been processed.`
+      : `Your withdrawal of ${w.amount.toString()} ${w.asset.symbol} was rejected${
+          reason ? `: ${reason}` : ""
+        }. The funds have been released back to your balance.`,
+    referenceType: "Withdrawal",
+    referenceId: w.id,
+  });
+}
 
 /**
  * Approve + settle a withdrawal: writes the debit through the shared, idempotent
@@ -38,6 +64,7 @@ export async function approveWithdrawal(
       metadata: { txHash: txHash?.trim() || null },
     },
   });
+  await notifyWithdrawal(withdrawalId, true);
   revalidatePath("/admin/withdrawals");
   return { ok: true };
 }
@@ -62,6 +89,7 @@ export async function rejectWithdrawal(
       metadata: { reason: reason.trim() || null },
     },
   });
+  await notifyWithdrawal(withdrawalId, false, reason.trim() || undefined);
   revalidatePath("/admin/withdrawals");
   return { ok: true };
 }

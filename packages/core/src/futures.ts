@@ -23,6 +23,7 @@
 
 import { Prisma, type PrismaClient, type PositionSide } from "../generated/prisma/index.js";
 import { getSpotWallet } from "./trading-engine.js";
+import { notify } from "./notifications.js";
 
 const D = Prisma.Decimal;
 type Decimal = Prisma.Decimal;
@@ -282,6 +283,18 @@ async function settleAtMark(
   }
   if (gross.greaterThan(0) || closeFee.greaterThan(0)) {
     await tx.wallet.update({ where: { id: wallet.id }, data: { balance } });
+  }
+
+  if (liquidated) {
+    // In-tx: the liquidation engine is the only place this fires, no other chokepoint.
+    await notify(tx, {
+      userId: position.userId,
+      type: "LIQUIDATION",
+      title: "Position liquidated",
+      body: `Your ${position.side} ${position.market.symbol} position was liquidated at ${markPrice.toFixed(2)}. Margin lost: ${margin.toFixed(2)}.`,
+      referenceType: "FuturesPosition",
+      referenceId: position.id,
+    });
   }
 
   return {

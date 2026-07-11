@@ -3,6 +3,7 @@ import { UserRound } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 import { SignOutButton } from "@/components/sign-out-button";
+import { NotificationBell } from "@/components/app-shell/notification-bell";
 
 // Sticky glass topbar. Glassmorphism is scoped to the nav per docs/DESIGN_SYSTEM.md.
 export function Topbar({ email }: { email: string }) {
@@ -19,6 +20,7 @@ export function Topbar({ email }: { email: string }) {
           <UserRound className="size-4" />
           {email}
         </span>
+        <NotificationBell />
         <SignOutButton />
       </div>
     </header>

@@ -176,6 +176,7 @@ main()
   .finally(async () => {
     const u = await prisma.user.findUnique({ where: { email } });
     if (u) {
+      await prisma.notification.deleteMany({ where: { userId: u.id } });
       await prisma.ledgerEntry.deleteMany({ where: { userId: u.id } });
       await prisma.futuresPosition.deleteMany({ where: { userId: u.id } });
       await prisma.wallet.deleteMany({ where: { userId: u.id } });

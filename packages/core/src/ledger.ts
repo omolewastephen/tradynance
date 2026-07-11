@@ -10,6 +10,7 @@
 //     so a watcher re-scan or a double admin click can't inflate a balance.
 
 import { Prisma, type PrismaClient } from "../generated/prisma/index.js";
+import { notify } from "./notifications.js";
 
 export interface CreditDepositInput {
   depositId: string;
@@ -92,6 +93,21 @@ export async function creditDeposit(
     await tx.deposit.update({
       where: { id: deposit.id },
       data: { status: "CREDITED", creditedAt: new Date() },
+    });
+
+    // 4) notify the user (in-tx: the deposit credit is the one chokepoint both the
+    //    chain-watcher and the admin manual-credit go through).
+    const asset = await tx.asset.findUnique({
+      where: { id: deposit.assetId },
+      select: { symbol: true },
+    });
+    await notify(tx, {
+      userId: deposit.userId,
+      type: "DEPOSIT",
+      title: "Deposit credited",
+      body: `${deposit.amount.toString()} ${asset?.symbol ?? "funds"} has been credited to your account.`,
+      referenceType: "Deposit",
+      referenceId: deposit.id,
     });
 
     return {

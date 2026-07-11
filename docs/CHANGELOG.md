@@ -3,6 +3,25 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 10a: Notifications
+- **`Notification` model** + `NotificationType` enum (DEPOSIT/WITHDRAWAL/TRADE/LIQUIDATION/
+  REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), migration `20260711230425_notifications`.
+- **`packages/core/src/notifications.ts`** — `notify(client, {...})` write helper that accepts
+  either the base client or a transaction client, so money functions can emit in-tx where
+  there's no other chokepoint, and the app/service layers emit post-tx otherwise (a failed
+  notification must never roll back money).
+- **Wired to real events**: deposit credited (in `creditDeposit`, the one chokepoint the
+  chain-watcher + admin credit both pass through), position liquidated (in `settleAtMark`,
+  emitted by the liquidation engine), order filled (in the `submitOrder` action, post-tx),
+  withdrawal completed/rejected (in the admin withdrawal actions).
+- **In-app center**: a topbar **bell** with an unread badge (polls `/api/notifications` every
+  20 s) + dropdown of the 12 most recent, and a full `/notifications` page (mark-one/mark-all
+  read, per-type icons). Mark-read actions are userId-scoped so a user can only touch their own.
+- **Verified**: futures core test still 29/29 (liquidation now also writes a notification, cleanup
+  updated). Browser E2E: a marketable limit BUY filled against the market-maker → the bell showed
+  **1 unread** with "Order filled — BUY 0.002 BTCUSDT @ 64361.63", dropdown + full page render,
+  no console errors.
+
 ## 2026-07-11 — Phase 9: Margin & futures (isolated-margin perpetuals)
 - **`packages/core/src/futures.ts`** — the risk core. Isolated-margin perpetual positions with
   the same money discipline as the rest: collateral (`margin`, quote asset) is debited from the

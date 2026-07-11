@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   placeOrder,
   cancelOrder,
+  notify,
   type PlaceOrderResult,
   type PrismaClient,
 } from "@tradynance/core";
@@ -32,6 +33,19 @@ export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderRe
     quantity: input.quantity,
   });
   if (result.ok) {
+    // Notify on a completed fill (post-tx: a failed notification must not undo the trade).
+    if (result.status === "FILLED") {
+      await notify(prisma as PrismaClient, {
+        userId: session.user.id,
+        type: "TRADE",
+        title: "Order filled",
+        body: `${input.side} ${result.filledQty} ${input.marketSymbol}${
+          result.avgPrice ? ` @ ${Number(result.avgPrice).toFixed(2)}` : ""
+        } filled.`,
+        referenceType: "Order",
+        referenceId: result.orderId,
+      });
+    }
     revalidatePath(`/trade/${input.marketSymbol}`);
     revalidatePath("/wallet");
   }

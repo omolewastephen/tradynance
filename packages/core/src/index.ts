@@ -8,5 +8,6 @@ export type { Side, RestingOrder, IncomingOrder, Fill, MatchResult } from "./tra
 export * from "./trading-engine.js";
 export * from "./convert.js";
 export * from "./futures.js";
+export * from "./notifications.js";
 export * from "./wallet/derivation.js";
 export * from "./wallet/provision.js";
