@@ -75,8 +75,10 @@ async function main() {
   const usdtSum = D(tUsdt.balance).minus("200000").plus(mUsdt.balance); // taker started 200000
   check("USDT delta = -376.5 (fees left system)", approx(usdtSum.toString(), "-376.5"), `sum=${usdtSum}`);
 
-  // Trades + ledger
-  const tradeCount = await prisma.trade.count();
+  // Trades + ledger (scoped to this run's users — the shared Trade table may hold demo trades)
+  const tradeCount = await prisma.trade.count({
+    where: { OR: [{ buyOrder: { userId: taker.id } }, { sellOrder: { userId: maker.id } }] },
+  });
   check("2 trades recorded", tradeCount === 2, `trades=${tradeCount}`);
   const ledgerSum = await prisma.ledgerEntry.aggregate({ _count: true });
   check("ledger entries written", ledgerSum._count > 0);

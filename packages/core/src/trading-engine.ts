@@ -36,6 +36,9 @@ export interface PlaceOrderInput {
   timeInForce: TimeInForce;
   price?: string | number; // required for LIMIT
   quantity: string | number; // base quantity
+  // Optional VIP-discounted taker fee (bps). Computed by the action from the user's tier; when
+  // absent the market's base rate is used. See packages/core/src/vip.ts.
+  takerFeeBpsOverride?: number;
 }
 
 export type PlaceOrderResult =
@@ -98,7 +101,8 @@ async function runPlaceOrder(
   });
   if (!market || !market.isActive) return { ok: false, error: "Unknown or inactive market" };
 
-  const takerBps = market.takerFeeBps;
+  // VIP: the action may pass a discounted taker rate; makers (system liquidity) pay base.
+  const takerBps = input.takerFeeBpsOverride ?? market.takerFeeBps;
   const makerBps = market.makerFeeBps;
 
   // Resting orders on the opposite side, best price first for the taker.

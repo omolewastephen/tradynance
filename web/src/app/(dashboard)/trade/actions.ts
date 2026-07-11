@@ -7,6 +7,7 @@ import {
   cancelOrder,
   notify,
   settleReferralCommissionsForUser,
+  effectiveTakerBpsForUser,
   type PlaceOrderResult,
   type PrismaClient,
 } from "@tradynance/core";
@@ -24,6 +25,11 @@ export type SubmitOrderInput = {
 
 export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderResult> {
   const session = await requireUser();
+  const takerFeeBpsOverride = await effectiveTakerBpsForUser(
+    prisma as PrismaClient,
+    session.user.id,
+    input.marketSymbol,
+  );
   const result = await placeOrder(prisma as PrismaClient, {
     userId: session.user.id,
     marketSymbol: input.marketSymbol,
@@ -32,6 +38,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderRe
     timeInForce: input.type === "MARKET" ? "IOC" : input.timeInForce,
     price: input.price,
     quantity: input.quantity,
+    takerFeeBpsOverride,
   });
   if (result.ok) {
     // Notify on a completed fill (post-tx: a failed notification must not undo the trade).

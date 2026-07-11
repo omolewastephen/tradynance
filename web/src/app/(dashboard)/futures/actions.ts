@@ -6,6 +6,7 @@ import {
   openPosition,
   closePosition,
   settleReferralCommissionsForUser,
+  effectiveTakerBpsForUser,
   type OpenPositionResult,
   type SettleResult,
   type PrismaClient,
@@ -31,12 +32,18 @@ export type OpenPositionInput = {
 
 export async function openFuturesPosition(input: OpenPositionInput): Promise<OpenPositionResult> {
   const session = await requireUser();
+  const takerFeeBpsOverride = await effectiveTakerBpsForUser(
+    prisma as PrismaClient,
+    session.user.id,
+    input.marketSymbol,
+  );
   const result = await openPosition(prisma as PrismaClient, {
     userId: session.user.id,
     marketSymbol: input.marketSymbol,
     side: input.side,
     leverage: input.leverage,
     margin: input.margin,
+    takerFeeBpsOverride,
   });
   if (result.ok) {
     await settleReferral(session.user.id);
@@ -48,9 +55,17 @@ export async function openFuturesPosition(input: OpenPositionInput): Promise<Ope
 
 export async function closeFuturesPosition(positionId: string): Promise<SettleResult> {
   const session = await requireUser();
+  const position = await prisma.futuresPosition.findUnique({
+    where: { id: positionId },
+    select: { market: { select: { symbol: true } } },
+  });
+  const takerFeeBpsOverride = position
+    ? await effectiveTakerBpsForUser(prisma as PrismaClient, session.user.id, position.market.symbol)
+    : undefined;
   const result = await closePosition(prisma as PrismaClient, {
     userId: session.user.id,
     positionId,
+    takerFeeBpsOverride,
   });
   if (result.ok) {
     await settleReferral(session.user.id);

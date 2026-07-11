@@ -3,6 +3,28 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 10c: VIP tiers
+- **`packages/core/src/vip.ts`** — 5 volume-based tiers (VIP 0–4) with taker-fee discounts
+  (10–35%). `get30dVolume` sums a user's trailing-30-day spot filled quote + futures notional;
+  `vipTierFor` selects the tier; `effectiveTakerBps` applies the discount.
+- **Genuinely wired into fees, low-risk**: rather than run volume queries inside the money-
+  critical settlement, the action layer computes the user's discounted taker bps
+  (`effectiveTakerBpsForUser`) and passes it as an optional `takerFeeBpsOverride` into
+  `placeOrder` / `openPosition` / `closePosition` — the engines just do `override ?? base`.
+  VIP 0 → no override → base fees, so existing behaviour + conservation tests are unchanged.
+  Applied to spot taker + futures open/close (all taker); maker-side discount deferred (resting
+  liquidity is the system market-maker).
+- **`/vip` page**: current tier, live 30-day volume, progress bar to the next tier, and the full
+  tier table with effective taker fees — added to the nav.
+- **Verified**: 12-assertion pure test (`vip-test.ts`) for tier selection + discount math; all
+  money tests still green with a clean book (trading **19**, futures **29**, convert 8,
+  withdrawal 21, referrals 9). Browser: `/vip` shows trader1 at VIP 0 with a real $10k 30-day
+  volume and correct fee table, no console errors.
+  - *Test-robustness fix*: `trading-test` counted trades **globally** (`prisma.trade.count()`),
+    which broke once real demo trades existed — scoped it to the run's own maker/taker. (Core
+    money tests must be run with the dev stack's market-maker stopped, else its resting book
+    crosses the tests' orders.)
+
 ## 2026-07-12 — Phase 10b: Referrals
 - **Earning**: a referrer earns a rebate (`REFERRAL_COMMISSION_BPS`, default 20%) on the trading
   fees their referees pay. Rather than inject payouts into the conservation-tested spot/futures

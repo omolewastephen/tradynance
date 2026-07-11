@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   Gauge,
   Gift,
+  Crown,
   ShieldCheck,
   ShieldQuestion,
   ScrollText,
@@ -32,6 +33,7 @@ export const mainSection: NavSection = {
     { href: "/wallet", label: "Wallet", icon: Wallet },
     { href: "/withdraw", label: "Withdraw", icon: ArrowUpFromLine },
     { href: "/referrals", label: "Referrals", icon: Gift },
+    { href: "/vip", label: "VIP", icon: Crown },
     { href: "/settings/security", label: "Security", icon: ShieldCheck },
   ],
 };

@@ -194,7 +194,12 @@
       "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT o.side, o.type, o.status, o.\\\\\"filledQuantity\\\\\" FROM \\\\\"Order\\\\\" o JOIN \\\\\"user\\\\\" u ON u.id=o.\\\\\"userId\\\\\" WHERE u.email='trader1@example.com' ORDER BY o.\\\\\"createdAt\\\\\" DESC LIMIT 3;\")",
       "Bash(node_modules/.bin/tsx packages/core/scripts/referrals-test.ts)",
       "Bash(node_modules/.bin/tsx packages/core/scripts/seed-referral.ts)",
-      "Bash(rm -f packages/core/scripts/seed-referral.ts)"
+      "Bash(rm -f packages/core/scripts/seed-referral.ts)",
+      "Bash(node_modules/.bin/tsx packages/core/scripts/vip-test.ts)",
+      "Bash(node_modules/.bin/tsx packages/core/scripts/trading-test.ts)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(grep -E \"^FAIL\" /tmp/tt.log)",
+      "Read(//Users/user/**)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

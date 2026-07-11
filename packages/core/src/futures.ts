@@ -95,6 +95,7 @@ export interface OpenPositionInput {
   side: PositionSide;
   leverage: number;
   margin: string | number; // collateral in quote asset
+  takerFeeBpsOverride?: number; // VIP-discounted taker fee; base rate when absent
 }
 
 export type OpenPositionResult =
@@ -128,7 +129,8 @@ export async function openPosition(
 
       const notional = margin.times(input.leverage);
       const size = notional.dividedBy(entryPrice);
-      const openFee = notional.times(market.takerFeeBps).dividedBy(10_000);
+      const takerBps = input.takerFeeBpsOverride ?? market.takerFeeBps;
+      const openFee = notional.times(takerBps).dividedBy(10_000);
       const totalDebit = margin.plus(openFee);
 
       const wallet = await getSpotWallet(tx, input.userId, market.quoteAssetId);
@@ -218,6 +220,7 @@ async function settleAtMark(
   positionId: string,
   markPrice: Decimal,
   liquidated: boolean,
+  takerFeeBpsOverride?: number,
 ): Promise<SettleResult> {
   const position = await tx.futuresPosition.findUnique({
     where: { id: positionId },
@@ -230,7 +233,8 @@ async function settleAtMark(
   const margin = new D(position.margin);
   const uPnl = unrealizedPnl(position.side, new D(position.entryPrice), markPrice, size);
   const gross = D.max(new D(0), margin.plus(uPnl).minus(position.fundingAccrued));
-  const closeFee = D.min(gross, markPrice.times(size).times(position.market.takerFeeBps).dividedBy(10_000));
+  const closeBps = takerFeeBpsOverride ?? position.market.takerFeeBps;
+  const closeFee = D.min(gross, markPrice.times(size).times(closeBps).dividedBy(10_000));
   const netReturn = gross.minus(closeFee);
   const realizedPnl = netReturn.minus(margin);
 
@@ -309,7 +313,7 @@ async function settleAtMark(
 /** User-initiated close at the current mark (Ticker). Guards ownership. */
 export async function closePosition(
   prisma: PrismaClient,
-  input: { userId: string; positionId: string },
+  input: { userId: string; positionId: string; takerFeeBpsOverride?: number },
 ): Promise<SettleResult> {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -321,7 +325,13 @@ export async function closePosition(
       if (position.userId !== input.userId) return { ok: false as const, error: "Not your position" };
       if (position.status !== "OPEN") return { ok: false as const, error: "Position is not open" };
       if (!position.market.ticker) return { ok: false as const, error: "No live price to close at" };
-      return settleAtMark(tx, position.id, new D(position.market.ticker.lastPrice), false);
+      return settleAtMark(
+        tx,
+        position.id,
+        new D(position.market.ticker.lastPrice),
+        false,
+        input.takerFeeBpsOverride,
+      );
     });
   } catch (e) {
     return { ok: false, error: (e as Error).message };
