@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Gauge } from "lucide-react";
 
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -83,6 +83,13 @@ export default async function MarketDetailPage({
         </div>
         <div className="flex items-center gap-2">
           <WatchStar symbol={market.symbol} initialWatched={!!watched} />
+          <Link
+            href={`/futures/${market.symbol}`}
+            className="inline-flex items-center gap-2 rounded-sm border border-border px-4 py-1.5 text-sm font-medium text-foreground-muted transition-colors hover:border-primary/40 hover:text-foreground"
+          >
+            <Gauge className="size-4" />
+            Futures
+          </Link>
           <Link
             href={`/trade/${market.symbol}`}
             className="inline-flex items-center gap-2 rounded-sm bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"

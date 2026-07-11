@@ -3,6 +3,44 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-11 — Phase 9: Margin & futures (isolated-margin perpetuals)
+- **`packages/core/src/futures.ts`** — the risk core. Isolated-margin perpetual positions with
+  the same money discipline as the rest: collateral (`margin`, quote asset) is debited from the
+  user's SPOT wallet on open (one `FUTURES_MARGIN` + one `FEE` ledger entry) and settled back
+  on close/liquidation (`FUTURES_PNL`/`LIQUIDATION` + `FEE`), balance is the cache. `size =
+  margin × leverage / entryPrice`; entry = live mark (Ticker). A taker fee (`market.takerFeeBps`,
+  on notional) is charged on open and close, exactly like spot.
+  - Pure, unit-tested helpers: `unrealizedPnl`, `positionEquity`, `isLiquidatable` (equity ≤
+    maintenance margin, mmr 0.5%), `liquidationPriceFor` (display).
+  - Isolated guarantee: the most a user can lose is their margin — settlement credits
+    `max(0, margin + uPnL − fundingAccrued) − closeFee`, floored at 0; any deficit is the
+    platform's. Funding accrues per interval (`accrueFunding`, LONG pays when rate > 0),
+    realized into the settlement figure at close. Funding rate is a fixed nominal (simplified,
+    not premium-derived).
+- **Schema** (migration `20260711170152_futures_positions`): `FuturesPosition` model +
+  `PositionSide`/`PositionStatus` enums; `LedgerEntryType` gains `FUTURES_MARGIN`,
+  `FUTURES_PNL`, `FUNDING`, `LIQUIDATION`.
+- **`services/liquidation-engine`** — standalone risk service (thin loop over the core, like
+  chain-watcher/market-maker): every 5 s it marks every OPEN position to its market's live price
+  and force-closes any whose equity has breached maintenance margin; every funding interval it
+  accrues funding on open positions. Wired into `npm run dev`.
+- **UI** `/futures/[symbol]`: chart + a Long/Short position form (leverage slider 1–50× with
+  quick-picks, margin input with %, live preview of size/notional/est. liq price/fee/cost) and a
+  positions panel — open positions with **live unrealized PnL + ROE** (polls the mark every 4 s),
+  liq price, margin, one-click close; plus closed/liquidated history. `Futures` added to the nav
+  and a Futures button on the coin page.
+- **Verified**: 29-assertion direct core test (`futures-test.ts`) — open debits margin+fee,
+  size/entry/liq math, PnL realized at a moved mark, **liquidation seizes margin at a breach**,
+  funding accrual, leverage/margin/insufficient-funds rejection, and **ledger conservation**
+  (Σ entries == balance delta). Browser E2E: opened a LONG 10× through the UI (ledger
+  `FUTURES_MARGIN −1000` + `FEE −20`, balance 50000→48980), closed it (`FUTURES_PNL +1000` +
+  `FEE −20` → 49960), history + live PnL render, no console errors. The **live running
+  liquidation-engine** force-closed a position driven below its liq price (LIQUIDATED, full
+  margin seized).
+- **Deferred (documented)**: cross margin (isolated only for now) and advanced order types
+  (OCO, trailing stop, iceberg, reduce-only) — order-management features layered on top of this
+  risk core, not part of it.
+
 ## 2026-07-11 — Performance pass
 - **Code-split the charts**: `lightweight-charts` is now loaded via dynamic `import()` inside
   the chart components instead of a static top-level import, so it ships as a separate async

@@ -76,6 +76,16 @@ isolation — fills write TRADE_FILL + FEE ledger entries for both sides; a GTC-
 rests and locks funds in the per-(user,asset) **SPOT wallet** (network="SPOT"). The
 `services/market-maker` system user quotes resting liquidity so the book is fillable.
 
+**FuturesPosition** — one isolated-margin perpetual position (`PositionSide` LONG/SHORT,
+`PositionStatus` OPEN/CLOSED/LIQUIDATED). Collateral (`margin`, quote asset) is moved out of the
+user's SPOT wallet on open and settled back (± realized PnL, ∓ funding) on close — the money
+maths live in `packages/core/src/futures.ts` and flow through `LedgerEntry` (new types
+`FUTURES_MARGIN`, `FUTURES_PNL`, `FUNDING`, `LIQUIDATION`) like everything else. `size`, `entryPrice`,
+`liquidationPrice` (display), `fundingAccrued`, `realizedPnl`, `closePrice` are recorded per row.
+The standalone `services/liquidation-engine` marks OPEN positions to the live Ticker price and
+force-closes any that breach maintenance margin, and accrues funding each interval. Cross margin
+and advanced order types (OCO/trailing/iceberg/reduce-only) are deferred.
+
 **AuditLog** — append-only action log (actor, action, entity, metadata, IP). Nothing here is
 ever deletable, per CLAUDE.md admin requirements.
 
@@ -88,6 +98,7 @@ User ─┬─< Wallet >─┬─ Asset ─< AssetNetwork
       ├─< WithdrawalWhitelist
       ├─< Watchlist >─ Market ─ Ticker (1:1, live price cache)
       ├─< Order >─< Trade >─ Market ─ Asset (base/quote)
+      ├─< FuturesPosition >─ Market  (isolated-margin perpetuals)
       ├─< AuditLog (as actor)
       ├─< LoginHistory
       ├─< Session, Account, TwoFactor (better-auth)
@@ -95,7 +106,8 @@ User ─┬─< Wallet >─┬─ Asset ─< AssetNetwork
 ```
 
 ## Deliberately deferred to later phases
-- Margin/futures positions, leverage, liquidation (Phase 9)
+- Cross margin (Phase 9 ships isolated margin only); advanced order types (OCO, trailing stop,
+  iceberg, reduce-only)
 - Staking, referral commissions/levels, VIP tiers, launchpad, NFT (Phase 10)
 - Notification records, support tickets (Phase 10/11)
 
@@ -138,3 +150,10 @@ type-checked:
   verified in the browser — RBAC redirect for a USER, suspend + KYC-approve reflected in the
   DB and written to the append-only audit log (attributed, with metadata), dashboard stats +
   audit viewer render. Charts code-split (−~49 kB First Load JS per chart route).
+- **Phase 9** (migration `20260711170152_futures_positions`): isolated-margin perpetual futures.
+  29-assertion direct core test (open debits margin+fee, size/entry/liq math, PnL realized at a
+  moved mark, liquidation seizes margin at a breach, funding accrual, validation rejections,
+  ledger conservation Σ==balance-delta). Browser E2E: LONG 10× opened → `FUTURES_MARGIN −1000` +
+  `FEE −20` (50000→48980), closed → `FUTURES_PNL +1000` + `FEE −20` (→49960), live PnL +
+  history render, no console errors. The live-running `liquidation-engine` force-closed a
+  position driven below its liq price (LIQUIDATED, full margin seized).

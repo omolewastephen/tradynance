@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "bash scripts/dev.sh",
-    "dev:app": "concurrently -n web,market-data,market-maker -c green,cyan,magenta -k \"npm run dev --workspace=web\" \"npm start --workspace=@tradynance/market-data\" \"npm start --workspace=@tradynance/market-maker\"",
+    "dev:app": "concurrently -n web,market-data,market-maker,liquidation -c green,cyan,magenta,yellow -k \"npm run dev --workspace=web\" \"npm start --workspace=@tradynance/market-data\" \"npm start --workspace=@tradynance/market-maker\" \"npm start --workspace=@tradynance/liquidation-engine\"",
     "db:seed": "npm run db:seed --workspace=web"
   },
   "devDependencies": {

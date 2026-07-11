@@ -45,6 +45,7 @@ services/
   chain-watcher/         standalone Node/TS process (BTC esplora + ETH block-scan)
   market-data/           standalone poller (Binance-format tickers → Ticker cache)
   market-maker/          standalone liquidity provider (quotes a ladder around live mid)
+  liquidation-engine/    standalone risk service (marks futures positions, liquidates + funding)
   workers/               (BullMQ, later)
   # NB: spot matching runs in-transaction in packages/core (trading-engine.ts), not a
   # separate matching-engine process — see Phase 5 note below.
@@ -148,9 +149,15 @@ app and the services depend on it, never the reverse. All money movement flows t
    Deposits/withdrawals admin already existed. Verified end-to-end (RBAC, actions → DB + audit).
    Also a **perf pass**: charts code-split (−~49 kB/route First Load JS), `/api/markets` cached
    (5s + SWR), AuditLog/User createdAt indexes.
-9. ⬅ **NEXT** — Margin & futures: leverage, liquidation engine, funding rate, advanced order types
-   (OCO, trailing stop, iceberg, reduce-only).
-10. Long-tail features (only after 0–9 are solid): notifications, referrals, VIP tiers,
+9. ✅ Margin & futures (isolated margin): `packages/core/src/futures.ts` (open/close/liquidate/
+   funding, FUTURES_MARGIN/FUTURES_PNL/FUNDING/LIQUIDATION ledger, isolated-loss guarantee,
+   equity-based liquidation, taker fees; pure PnL/equity/liq-price helpers), `FuturesPosition`
+   model + PositionSide/PositionStatus enums, `services/liquidation-engine` (marks OPEN positions
+   to live price, force-closes maintenance-margin breaches, accrues funding), `/futures/[symbol]`
+   UI (leverage slider, live-PnL positions, close, history). 29-assertion core test + browser E2E
+   + live-engine liquidation verified. **Deferred:** cross margin, advanced order types (OCO,
+   trailing stop, iceberg, reduce-only).
+10. ⬅ **NEXT** — Long-tail features (only after 0–9 are solid): notifications, referrals, VIP tiers,
     staking, launchpad, NFT marketplace.
 11. Hardening: rate limiting, audit trail completeness, monitoring (Sentry), CI/CD.
 
@@ -159,7 +166,7 @@ From the repo root:
 ```
 npm install            # once (npm workspaces)
 npm run dev            # ensures Postgres is up, then starts web + market-data + market-maker
-                       #   → http://localhost:3000, color-prefixed logs, Ctrl-C stops all
+                       #   + liquidation-engine → http://localhost:3000, color-prefixed logs
 ```
 First-time DB setup: `cd web && npx prisma migrate deploy && npm run db:seed`.
 Seeded logins: admin@tradynance.local / ChangeMe123!, trader1@example.com / Password123.

@@ -94,11 +94,12 @@ model User {
   watchlist           Watchlist[]
 
   displayUsername  String?
-  twoFactorEnabled Boolean?    @default(false)
+  twoFactorEnabled Boolean?          @default(false)
   referralCodeUsed String?
   sessions         Session[]
   accounts         Account[]
   twofactors       TwoFactor[]
+  futuresPositions FuturesPosition[]
 
   @@index([status])
   @@index([kycStatus])
@@ -189,6 +190,10 @@ enum LedgerEntryType {
   TRANSFER_OUT
   CONVERSION
   ADJUSTMENT
+  FUTURES_MARGIN // collateral moved into a futures position on open
+  FUTURES_PNL // margin + realized PnL returned to the wallet on close
+  FUNDING // periodic perp funding payment
+  LIQUIDATION // residual equity returned when a position is force-closed
 }
 
 enum LedgerEntryStatus {
@@ -365,10 +370,11 @@ model Market {
   makerFeeBps       Int     @default(10)
   takerFeeBps       Int     @default(20)
 
-  orders    Order[]
-  trades    Trade[]
-  ticker    Ticker?
-  watchedBy Watchlist[]
+  orders           Order[]
+  trades           Trade[]
+  ticker           Ticker?
+  watchedBy        Watchlist[]
+  futuresPositions FuturesPosition[]
 
   @@index([baseAssetId, quoteAssetId])
 }
@@ -472,6 +478,50 @@ model Trade {
   createdAt DateTime @default(now())
 
   @@index([marketId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Margin & futures (isolated-margin perpetuals)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+  LIQUIDATED
+}
+
+// One isolated-margin perpetual position. Collateral (`margin`, in the quote asset) is moved
+// out of the user's SPOT wallet on open and settled back (± realized PnL, ∓ funding) on close.
+// See packages/core/src/futures.ts. Cross margin + advanced order types are deferred.
+model FuturesPosition {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  marketId String
+  market   Market @relation(fields: [marketId], references: [id])
+
+  side       PositionSide
+  leverage   Int
+  size       Decimal      @db.Decimal(36, 18) // base-asset contracts = (margin × leverage) / entryPrice
+  entryPrice Decimal      @db.Decimal(36, 18)
+  margin     Decimal      @db.Decimal(36, 18) // isolated collateral in quote (USDT)
+
+  liquidationPrice Decimal  @db.Decimal(36, 18) // display; engine uses equity-based check
+  fundingAccrued   Decimal  @default(0) @db.Decimal(36, 18) // + = user has paid net funding
+  realizedPnl      Decimal  @default(0) @db.Decimal(36, 18)
+  closePrice       Decimal? @db.Decimal(36, 18)
+
+  status   PositionStatus @default(OPEN)
+  openedAt DateTime       @default(now())
+  closedAt DateTime?
+
+  @@index([userId, status])
+  @@index([marketId, status])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
