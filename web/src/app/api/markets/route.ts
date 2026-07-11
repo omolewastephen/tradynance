@@ -26,5 +26,10 @@ export async function GET() {
       updatedAt: m.ticker!.updatedAt,
     }));
 
-  return NextResponse.json({ markets: data });
+  // Same payload for every user, refreshed by market-data every ~10s — let clients/CDN cache
+  // briefly so the 10s client poll doesn't hit the DB on every tick under load.
+  return NextResponse.json(
+    { markets: data },
+    { headers: { "Cache-Control": "public, max-age=5, stale-while-revalidate=10" } },
+  );
 }

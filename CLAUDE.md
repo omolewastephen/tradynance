@@ -141,9 +141,14 @@ app and the services depend on it, never the reverse. All money movement flows t
    two CONVERSION ledger entries, Conversion history row; server-re-priced), `/convert` swap
    UI + history, wired to nav. 8-assertion core test + browser-verified. Spread is platform
    revenue (unmodeled like trade fees).
-8. ⬅ **NEXT** — Admin panel core: user management, deposit/withdrawal management, KYC review, audit logs
-   (append-only, nothing deletable).
-9. Margin & futures: leverage, liquidation engine, funding rate, advanced order types
+8. ✅ Admin panel core: `/admin` dashboard (real stats), `/admin/users` (paginated list +
+   search) + `/admin/users/[id]` (detail + status/KYC/role/2FA controls, self- & super-admin
+   guards, all audit-logged), `/admin/kyc` (approve/reject; doc upload deferred), `/admin/audit`
+   (paginated append-only viewer). Role groups in `src/lib/admin.ts`; server-side `requireRole`.
+   Deposits/withdrawals admin already existed. Verified end-to-end (RBAC, actions → DB + audit).
+   Also a **perf pass**: charts code-split (−~49 kB/route First Load JS), `/api/markets` cached
+   (5s + SWR), AuditLog/User createdAt indexes.
+9. ⬅ **NEXT** — Margin & futures: leverage, liquidation engine, funding rate, advanced order types
    (OCO, trailing stop, iceberg, reduce-only).
 10. Long-tail features (only after 0–9 are solid): notifications, referrals, VIP tiers,
     staking, launchpad, NFT marketplace.

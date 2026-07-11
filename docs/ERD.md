@@ -134,3 +134,7 @@ type-checked:
   (spread, debit/credit, two CONVERSION ledger entries, value=in×(1−spread), same-asset +
   insufficient rejected); browser convert 6400 USDT → 0.09961909 BTC settled exactly (USDT
   −6400, two ledger rows, Conversion history row).
+- **Phase 8 + perf** (migration `..._perf_indexes`: AuditLog/User createdAt): admin panel
+  verified in the browser — RBAC redirect for a USER, suspend + KYC-approve reflected in the
+  DB and written to the append-only audit log (attributed, with metadata), dashboard stats +
+  audit viewer render. Charts code-split (−~49 kB First Load JS per chart route).

@@ -165,12 +165,17 @@
       "Bash(pkill -f \"dev:app\")",
       "Bash(perl -0pi -e 's/\\(  \"\\\\/trade\",\\\\n\\)/$1  \"\\\\/convert\",\\\\n/' src/middleware.ts)",
       "Bash(perl -0pi -e 's/\\(    \"\\\\/trade\\\\/:path\\\\*\",\\\\n\\)/$1    \"\\\\/convert\\\\/:path*\",\\\\n/' src/middleware.ts)",
-      "Bash(node convert-e2e.js)"
+      "Bash(node convert-e2e.js)",
+      "Bash(mkdir -p \"/Users/user/Desktop/tradynance/web/src/app/\\(dashboard\\)/admin/users/[id]\" \"/Users/user/Desktop/tradynance/web/src/app/\\(dashboard\\)/admin/kyc\" \"/Users/user/Desktop/tradynance/web/src/app/\\(dashboard\\)/admin/audit\")",
+      "Bash(npx eslint *)",
+      "Bash(perl -0pi -e \"s/You can't change your own role\\\\./You can\\\\&apos;t change your own role./\" \"src/app/\\(dashboard\\)/admin/users/[id]/user-controls.tsx\")",
+      "Bash(node admin-e2e.js)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",
       "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/markets",
-      "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/trade"
+      "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/trade",
+      "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/admin/users"
     ]
   }
 }

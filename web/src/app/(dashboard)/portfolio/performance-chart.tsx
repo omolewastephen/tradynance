@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  createChart,
-  AreaSeries,
-  type IChartApi,
-  type ISeriesApi,
-  type UTCTimestamp,
-} from "lightweight-charts";
+// Types only — runtime (`lightweight-charts`) loaded on demand via import() (separate chunk).
+import type { IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
 
 import { cn } from "@/lib/utils";
 
@@ -18,35 +13,46 @@ export function PerformanceChart() {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
+  const [ready, setReady] = useState(false);
   const [range, setRange] = useState<Range>("7d");
   const [state, setState] = useState<"loading" | "ok" | "empty" | "error">("loading");
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const chart = createChart(containerRef.current, {
-      layout: { background: { color: "transparent" }, textColor: "#8a93a6", fontFamily: "var(--font-mono)" },
-      grid: { vertLines: { visible: false }, horzLines: { color: "rgba(255,255,255,0.04)" } },
-      rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
-      timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true },
-      autoSize: true,
-      crosshair: { mode: 0 },
-    });
-    const series = chart.addSeries(AreaSeries, {
-      lineColor: "#18c964",
-      topColor: "rgba(24,201,100,0.28)",
-      bottomColor: "rgba(24,201,100,0.02)",
-      lineWidth: 2,
-    });
-    chartRef.current = chart;
-    seriesRef.current = series;
+    let disposed = false;
+    let chart: IChartApi | null = null;
+    (async () => {
+      const { createChart, AreaSeries } = await import("lightweight-charts");
+      if (disposed || !containerRef.current) return;
+      chart = createChart(containerRef.current, {
+        layout: { background: { color: "transparent" }, textColor: "#8a93a6", fontFamily: "var(--font-mono)" },
+        grid: { vertLines: { visible: false }, horzLines: { color: "rgba(255,255,255,0.04)" } },
+        rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
+        timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true },
+        autoSize: true,
+        crosshair: { mode: 0 },
+      });
+      const series = chart.addSeries(AreaSeries, {
+        lineColor: "#18c964",
+        topColor: "rgba(24,201,100,0.28)",
+        bottomColor: "rgba(24,201,100,0.02)",
+        lineWidth: 2,
+      });
+      chartRef.current = chart;
+      seriesRef.current = series;
+      setReady(true);
+    })();
     return () => {
-      chart.remove();
+      disposed = true;
+      chart?.remove();
       chartRef.current = null;
       seriesRef.current = null;
     };
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+    if (!ready) return;
     let cancelled = false;
     setState("loading");
     fetch(`/api/portfolio/performance?range=${range}`)
@@ -67,7 +73,7 @@ export function PerformanceChart() {
     return () => {
       cancelled = true;
     };
-  }, [range]);
+  }, [ready, range]);
 
   return (
     <div className="flex flex-col gap-2">

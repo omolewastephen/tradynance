@@ -3,6 +3,41 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-11 — Performance pass
+- **Code-split the charts**: `lightweight-charts` is now loaded via dynamic `import()` inside
+  the chart components instead of a static top-level import, so it ships as a separate async
+  chunk. **First Load JS dropped ~48–49 kB** on every chart route (markets/[symbol] 165→116 kB,
+  trade/[symbol] 164→115 kB, portfolio 160→112 kB).
+- **Cached the shared hot API**: `/api/markets` (same payload for all users, refreshed every
+  ~10s) now sends `Cache-Control: max-age=5, stale-while-revalidate=10`, so the 10s client
+  poll doesn't hit the DB every tick under load. Per-symbol order book/trades stay uncached
+  (need 3s freshness).
+- **Indexes** for the new admin hot paths: `AuditLog(createdAt)` and `User(createdAt)` (both
+  ordered newest-first). Confirmed runtime pages already parallelize queries (Promise.all) with
+  no N+1 loops.
+
+## 2026-07-11 — Phase 8: Admin panel core
+- **Admin dashboard** (`/admin`) with real stats: users (total/active, excluding the
+  market-maker system account), pending KYC / deposits / withdrawals, trade count + quote
+  volume, fee revenue (Σ taker+maker fees), conversions — all parallel queries — plus Manage
+  quick-links.
+- **User management**: `/admin/users` paginated list (25/page) with email/username search;
+  `/admin/users/[id]` detail (profile, aggregated balances, activity counts, recent ledger)
+  with action controls — set status (ACTIVE/SUSPENDED/FROZEN/BANNED), set KYC, change role
+  (SUPER_ADMIN only), reset 2FA. Guards: can't act on yourself or on a super admin; role
+  changes are super-admin-only (privilege-escalation guard). Every action is **audit-logged**.
+- **KYC review** (`/admin/kyc`): pending queue + approve/reject → VERIFIED/REJECTED, plus a
+  recently-reviewed list. (Document upload isn't wired — review operates on the status field;
+  noted in the UI.)
+- **Audit log viewer** (`/admin/audit`): paginated (40/page), append-only, actor email +
+  action + entity + metadata. Any admin role incl. read-only AUDITOR can view.
+- Wired the full admin section into the sidebar. Role gating enforced server-side via
+  `requireRole` in `src/lib/admin.ts` role groups.
+- **Verified end-to-end** through the browser: RBAC (a USER hitting `/admin/users` is
+  redirected to `/dashboard`), suspending a user + approving KYC both reflected in the DB and
+  written to the append-only audit log (attributed to admin, with metadata), dashboard stats
+  and audit viewer render. No console errors.
+
 ## 2026-07-11 — Phase 7: Convert
 - **`packages/core/src/convert.ts`** — instant asset swap, same ledger discipline as the rest:
   debit the from-asset and credit the to-asset in ONE transaction, each a CONVERSION ledger

@@ -7,8 +7,11 @@ import {
   CandlestickChart,
   ArrowLeftRight,
   ShieldCheck,
+  ShieldQuestion,
+  ScrollText,
   Landmark,
   Banknote,
+  LayoutGrid,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -32,9 +35,12 @@ export const mainSection: NavSection = {
 export const adminSection: NavSection = {
   heading: "Admin",
   items: [
-    { href: "/admin", label: "Dashboard", icon: Users },
+    { href: "/admin", label: "Dashboard", icon: LayoutGrid },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/kyc", label: "KYC review", icon: ShieldQuestion },
     { href: "/admin/deposits", label: "Deposits", icon: Landmark },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Banknote },
+    { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   ],
 };
 

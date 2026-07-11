@@ -102,6 +102,7 @@ model User {
 
   @@index([status])
   @@index([kycStatus])
+  @@index([createdAt]) // admin user list orders newest-first
   @@map("user")
 }
 
@@ -492,6 +493,7 @@ model AuditLog {
 
   @@index([actorId])
   @@index([entityType, entityId])
+  @@index([createdAt]) // the admin audit viewer orders by newest-first
 }
 
 // Append-only record of every sign-in, distinct from the (ephemeral, deletable) Session
