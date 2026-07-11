@@ -102,6 +102,9 @@ model User {
   futuresPositions FuturesPosition[]
   notifications    Notification[]
 
+  commissionsEarned    ReferralCommission[] @relation("CommissionsEarned")
+  commissionsGenerated ReferralCommission[] @relation("CommissionsGenerated")
+
   @@index([status])
   @@index([kycStatus])
   @@index([createdAt]) // admin user list orders newest-first
@@ -129,6 +132,8 @@ model Asset {
   quoteMarkets   Market[]       @relation("MarketQuote")
   conversionFrom Conversion[]   @relation("ConvertFrom")
   conversionTo   Conversion[]   @relation("ConvertTo")
+
+  referralCommissions ReferralCommission[]
 }
 
 model AssetNetwork {
@@ -195,6 +200,7 @@ enum LedgerEntryType {
   FUTURES_PNL // margin + realized PnL returned to the wallet on close
   FUNDING // periodic perp funding payment
   LIQUIDATION // residual equity returned when a position is force-closed
+  REFERRAL_COMMISSION // rebate credited to a referrer from a referee's trading fee
 }
 
 enum LedgerEntryStatus {
@@ -523,6 +529,30 @@ model FuturesPosition {
 
   @@index([userId, status])
   @@index([marketId, status])
+}
+
+// One rebate a referrer earns from a referee's trading fee. Derived from a single FEE
+// LedgerEntry (`ledgerEntryId` unique = idempotency key), settled by
+// packages/core/src/referrals.ts. The commission credit itself is a REFERRAL_COMMISSION
+// LedgerEntry on the referrer's SPOT wallet.
+model ReferralCommission {
+  id         String @id @default(cuid())
+  referrerId String
+  referrer   User   @relation("CommissionsEarned", fields: [referrerId], references: [id])
+  refereeId  String
+  referee    User   @relation("CommissionsGenerated", fields: [refereeId], references: [id])
+
+  ledgerEntryId    String  @unique // the FEE entry this is derived from
+  assetId          String
+  asset            Asset   @relation(fields: [assetId], references: [id])
+  feeAmount        Decimal @db.Decimal(36, 18)
+  rateBps          Int
+  commissionAmount Decimal @db.Decimal(36, 18)
+
+  createdAt DateTime @default(now())
+
+  @@index([referrerId, createdAt])
+  @@index([refereeId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

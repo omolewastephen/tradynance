@@ -191,7 +191,10 @@
       "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT le.type, round\\(le.amount,4\\) amount, round\\(le.\\\\\"balanceAfter\\\\\",2\\) bal, le.note FROM \\\\\"LedgerEntry\\\\\" le JOIN \\\\\"user\\\\\" u ON u.id=le.\\\\\"userId\\\\\" WHERE u.email='trader1@example.com' AND le.\\\\\"referenceType\\\\\"='FuturesPosition' ORDER BY le.\\\\\"createdAt\\\\\";\")",
       "Bash(node notif-e2e.js)",
       "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT n.type, n.title, n.read, n.\\\\\"createdAt\\\\\" FROM \\\\\"Notification\\\\\" n JOIN \\\\\"user\\\\\" u ON u.id=n.\\\\\"userId\\\\\" WHERE u.email='trader1@example.com' ORDER BY n.\\\\\"createdAt\\\\\" DESC LIMIT 5;\")",
-      "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT o.side, o.type, o.status, o.\\\\\"filledQuantity\\\\\" FROM \\\\\"Order\\\\\" o JOIN \\\\\"user\\\\\" u ON u.id=o.\\\\\"userId\\\\\" WHERE u.email='trader1@example.com' ORDER BY o.\\\\\"createdAt\\\\\" DESC LIMIT 3;\")"
+      "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT o.side, o.type, o.status, o.\\\\\"filledQuantity\\\\\" FROM \\\\\"Order\\\\\" o JOIN \\\\\"user\\\\\" u ON u.id=o.\\\\\"userId\\\\\" WHERE u.email='trader1@example.com' ORDER BY o.\\\\\"createdAt\\\\\" DESC LIMIT 3;\")",
+      "Bash(node_modules/.bin/tsx packages/core/scripts/referrals-test.ts)",
+      "Bash(node_modules/.bin/tsx packages/core/scripts/seed-referral.ts)",
+      "Bash(rm -f packages/core/scripts/seed-referral.ts)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

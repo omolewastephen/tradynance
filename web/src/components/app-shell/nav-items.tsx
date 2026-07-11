@@ -7,6 +7,7 @@ import {
   CandlestickChart,
   ArrowLeftRight,
   Gauge,
+  Gift,
   ShieldCheck,
   ShieldQuestion,
   ScrollText,
@@ -30,6 +31,7 @@ export const mainSection: NavSection = {
     { href: "/convert", label: "Convert", icon: ArrowDownUp },
     { href: "/wallet", label: "Wallet", icon: Wallet },
     { href: "/withdraw", label: "Withdraw", icon: ArrowUpFromLine },
+    { href: "/referrals", label: "Referrals", icon: Gift },
     { href: "/settings/security", label: "Security", icon: ShieldCheck },
   ],
 };

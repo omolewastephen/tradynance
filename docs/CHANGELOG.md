@@ -3,6 +3,28 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 10b: Referrals
+- **Earning**: a referrer earns a rebate (`REFERRAL_COMMISSION_BPS`, default 20%) on the trading
+  fees their referees pay. Rather than inject payouts into the conservation-tested spot/futures
+  settlement, `packages/core/src/referrals.ts` `settleReferralCommissionsForUser` derives
+  commissions from the FEE ledger entries those trades already write — one `ReferralCommission`
+  per fee entry, keyed by the fee entry id (`ledgerEntryId` UNIQUE) so it's **fully idempotent**.
+  The rebate is a `REFERRAL_COMMISSION` ledger credit on the referrer's SPOT wallet in the fee's
+  asset (from platform fee revenue — never touches the referee).
+- **`ReferralCommission` model** + `REFERRAL_COMMISSION` ledger type (migration
+  `20260711231911_referral_commissions`). The referral tree itself (`referralCode`/`referredById`)
+  already existed from Phase 1.
+- **Wired** into the spot `submitOrder` and futures open/close actions (best-effort, post-fill,
+  idempotent — a failed settle never fails the trade). Covers spot + futures fees.
+- **`/referrals` dashboard**: referral code + copy-able invite link (`/register?ref=CODE`, which
+  the register form already reads), stats (total referrals / commission earned / rate), the list
+  of referred users, and commission history. Added to the nav.
+- **Verified**: 9-assertion core test (`referrals-test.ts`) — commission = fees × rate, credited
+  to the referrer's wallet, `ReferralCommission` rows + `REFERRAL_COMMISSION` ledger entries,
+  idempotent re-settle is a no-op, referrer notified, no-referrer earns nothing. Browser: the
+  dashboard renders code/link/stats/history correctly (demo referral → 5.54 USDT across 3 fees),
+  no console errors.
+
 ## 2026-07-12 — Phase 10a: Notifications
 - **`Notification` model** + `NotificationType` enum (DEPOSIT/WITHDRAWAL/TRADE/LIQUIDATION/
   REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), migration `20260711230425_notifications`.

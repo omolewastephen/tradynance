@@ -6,6 +6,7 @@ import {
   placeOrder,
   cancelOrder,
   notify,
+  settleReferralCommissionsForUser,
   type PlaceOrderResult,
   type PrismaClient,
 } from "@tradynance/core";
@@ -45,6 +46,12 @@ export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderRe
         referenceType: "Order",
         referenceId: result.orderId,
       });
+    }
+    // Best-effort: turn any fees this order charged into a referrer rebate (idempotent).
+    try {
+      await settleReferralCommissionsForUser(prisma as PrismaClient, session.user.id);
+    } catch {
+      /* commission settlement is non-critical; never fail the trade over it */
     }
     revalidatePath(`/trade/${input.marketSymbol}`);
     revalidatePath("/wallet");

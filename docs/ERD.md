@@ -86,6 +86,12 @@ The standalone `services/liquidation-engine` marks OPEN positions to the live Ti
 force-closes any that breach maintenance margin, and accrues funding each interval. Cross margin
 and advanced order types (OCO/trailing/iceberg/reduce-only) are deferred.
 
+**ReferralCommission** — one rebate a referrer earns from a referee's trading fee, derived from
+a single FEE `LedgerEntry` (`ledgerEntryId` UNIQUE = idempotency key), settled by
+`packages/core/src/referrals.ts`. The credit itself is a `REFERRAL_COMMISSION` ledger entry on
+the referrer's SPOT wallet. The referral relationship lives on **User** (`referralCode` /
+`referredById` / self-relation `referrals`), from Phase 1.
+
 **Notification** — in-app user notifications (`NotificationType`: DEPOSIT/WITHDRAWAL/TRADE/
 LIQUIDATION/REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), written by the core money functions
 (in-tx, via `packages/core/src/notifications.ts`) and the app/service layers (post-tx). `read`
