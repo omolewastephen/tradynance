@@ -175,6 +175,16 @@ app and the services depend on it, never the reverse. All money movement flows t
     build; `seed-tickers.ts` + `seed-ci.ts` make the suite CI-runnable). **Build plan complete.**
 
 ### Post-plan enhancements
+13. ✅ Design uplift + marketing + CMS: design system **v2 "Onyx & Emerald"** (deepened emerald,
+    electric-blue accent, onyx neutrals, glow/gradient utilities; new gradient logo tile — all via
+    CSS-var tokens so the app changed in one move), a public **marketing site** (`(marketing)`
+    group: home w/ live tickers, about, blog, contact) built on it, and an **admin CMS**
+    (`/admin/blog` CRUD, `/admin/messages` inbox, `/admin/content` copy editor; `Post`/
+    `ContactMessage`/`SiteContent` models; `CONTENT_ROLES`, audit-logged). Marketing copy is
+    admin-editable with code defaults. **Deposit note:** per-user deposit addresses are mapped but
+    **not swept** to a central wallet, and the hot-wallet index collides with the first deposit
+    index — both queued as the **deposit-sweeper** track.
+
 12. ✅ Real value movement (turns the custody simulation real, all env-gated — inert until you
     supply the credential): **email** (`src/lib/email.ts` — Resend HTTP API + console fallback;
     reset/verification/withdrawal-OTP emails now real, branded, anti-phishing-stamped),

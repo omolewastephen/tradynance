@@ -3,6 +3,30 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 13: Design uplift + marketing site + CMS
+- **Design system v2 "Onyx & Emerald"** (13a): overhauled the CSS-variable palette to a premium
+  dark-exchange look — onyx surfaces (#0A0B0E/#13151C), deepened emerald (#12D07A), electric-blue
+  accent (#4C82FB), rose "down" (#F6465D), a foreground-subtle token, refined elevation + glow, a
+  brand gradient. Because every component themes off the vars, the whole app changed in one move.
+  New **gradient logo tile** (emerald→blue, ascending bars) — far more visible. Premium utilities
+  (`text-gradient-brand`, `bg-brand-glow`, `bg-grid`, `glass`). DESIGN_SYSTEM.md → v2.
+- **Public marketing site** (13b): new `(marketing)` route group + header/footer. `/` now serves a
+  real homepage (gradient hero, **live ticker strip** from real DB tickers, feature grid, CTA);
+  `/about`, `/contact` (form → `ContactMessage`, IP rate-limited), `/blog` + `/blog/[slug]`
+  (DB-driven, generative gradient covers, dependency-free markdown renderer). Copy is CMS-editable
+  via `lib/site-content.ts` (code defaults + admin overrides). 3 sample posts seeded.
+- **Admin CMS** (13c): `Post` / `ContactMessage` / `SiteContent` models (migration `..._cms`).
+  `/admin/blog` (full CRUD, draft/publish, slugs, markdown), `/admin/messages` (contact inbox),
+  `/admin/content` (edit all marketing copy). RBAC via `CONTENT_ROLES`, audit-logged; wired into
+  the admin nav — "wired up into the admin for full management."
+- **Verified**: production build green (First Load JS 103 kB / middleware 33 kB unchanged; all
+  marketing + CMS routes compiled); browser E2E of homepage, blog, contact submission → admin
+  inbox, admin blog manager, and the content editor — no console errors.
+- **Note (answering a user question):** deposits are mapped to a **unique per-user address** but are
+  **not yet swept** into a central Tradynance wallet — and the withdrawal hot-wallet index (0)
+  currently collides with the first user's deposit index. Both are the **deposit-sweeper** track,
+  queued next.
+
 ## 2026-07-12 — Phase 12c: Pay-from-your-wallet (web3 deposits)
 - **`components/web3/pay-with-wallet.tsx`** — on an ETH_SEPOLIA deposit page, connect a browser
   (EIP-1193 / injected, e.g. MetaMask) wallet and send the deposit straight to your custodial
