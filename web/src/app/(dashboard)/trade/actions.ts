@@ -29,7 +29,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderRe
   const session = await requireUser();
 
   // Burst protection — generous, since active trading is legitimately frequent.
-  const limited = enforceRateLimit("order:place", session.user.id, 40, 10_000);
+  const limited = await enforceRateLimit("order:place", session.user.id, 40, 10_000);
   if (!limited.ok) return { ok: false, error: limited.error };
 
   const takerFeeBpsOverride = await effectiveTakerBpsForUser(

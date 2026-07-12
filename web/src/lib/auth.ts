@@ -132,6 +132,9 @@ export const auth = betterAuth({
   // "database" or a secondary (Redis) store for multi-instance — see Phase 11 notes.
   rateLimit: {
     enabled: true,
+    // Shared across web replicas via the RateLimit table (vs. the default in-process store), so
+    // brute-force limits hold no matter how many instances serve a user.
+    storage: "database",
     window: 60, // default: 100 requests / 60s / IP across auth endpoints
     max: 100,
     customRules: {

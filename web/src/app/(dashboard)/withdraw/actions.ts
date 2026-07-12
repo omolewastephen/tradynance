@@ -38,7 +38,7 @@ export async function requestWithdrawal(formData: FormData): Promise<RequestResu
   const session = await requireUser();
 
   // Cap withdrawal requests per user (abuse / enumeration of destinations).
-  const limited = enforceRateLimit("withdraw:request", session.user.id, 5, 60_000);
+  const limited = await enforceRateLimit("withdraw:request", session.user.id, 5, 60_000);
   if (!limited.ok) return { ok: false, error: limited.error };
 
   const parsed = requestSchema.safeParse({
@@ -139,7 +139,7 @@ export async function confirmWithdrawal(formData: FormData): Promise<ConfirmResu
 
   // Throttle confirmation attempts — this step verifies the email OTP + TOTP/password, so it's
   // the brute-force surface for a pending withdrawal.
-  const limited = enforceRateLimit("withdraw:confirm", session.user.id, 8, 5 * 60_000);
+  const limited = await enforceRateLimit("withdraw:confirm", session.user.id, 8, 5 * 60_000);
   if (!limited.ok) return { ok: false, error: limited.error };
 
   const parsed = confirmSchema.safeParse({

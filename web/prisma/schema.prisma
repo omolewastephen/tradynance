@@ -934,3 +934,14 @@ model TwoFactor {
   @@index([userId])
   @@map("twoFactor")
 }
+
+// better-auth "database" rate-limit storage — shared across web replicas (vs. the default in-memory
+// per-process limiter). Managed entirely by better-auth; do not write to it from app code.
+model RateLimit {
+  id          String  @id
+  key         String?
+  count       Int?
+  lastRequest BigInt?
+
+  @@map("rateLimit")
+}

@@ -263,7 +263,10 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('railway.json','utf8'\\)\\); console.log\\('valid JSON'\\)\")",
       "Bash(python3 -c \"import yaml,sys; d=yaml.safe_load\\(open\\('render.yaml'\\)\\); print\\('valid YAML —', len\\(d['services']\\), 'services,', len\\(d['databases']\\), 'db,', len\\(d['envVarGroups']\\), 'env group'\\)\")",
       "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('render.yaml','utf8'\\); console.log\\('yaml \\(python unavailable\\); lines:', s.split\\('\\\\n'\\).length\\)\")",
-      "Bash(node -e \"let y; try{y=require\\('yaml'\\)}catch\\(e\\){try{y=require\\('js-yaml'\\)}catch\\(e2\\){console.log\\('no yaml lib'\\);process.exit\\(0\\)}}; const s=require\\('fs'\\).readFileSync\\('render.yaml','utf8'\\); const d=\\(y.parse||y.load\\)\\(s\\); console.log\\('valid YAML —', d.services.length,'services,', d.databases.length,'db,', d.envVarGroups.length,'env group\\(s\\)'\\)\")"
+      "Bash(node -e \"let y; try{y=require\\('yaml'\\)}catch\\(e\\){try{y=require\\('js-yaml'\\)}catch\\(e2\\){console.log\\('no yaml lib'\\);process.exit\\(0\\)}}; const s=require\\('fs'\\).readFileSync\\('render.yaml','utf8'\\); const d=\\(y.parse||y.load\\)\\(s\\); console.log\\('valid YAML —', d.services.length,'services,', d.databases.length,'db,', d.envVarGroups.length,'env group\\(s\\)'\\)\")",
+      "Bash(redis-server --version)",
+      "Bash(redis-cli --version)",
+      "Bash(perl -0pi -e 's/# Rate limiting is in-process.*?\\\\n# REDIS_URL=\"\"/# Redis \\\\\\(shared rate limiting across web replicas\\\\\\). Unset = in-process limiter \\\\\\(single node only\\\\\\).\\\\n# Set to run multiple web replicas safely. e.g. redis:\\\\/\\\\/default:PASS\\\\@host:6379\\\\nREDIS_URL=\"\"/s' src/app)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

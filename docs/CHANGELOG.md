@@ -3,6 +3,20 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Redis-backed rate limiting (multi-replica safe)
+- **App-level limiter** (`src/lib/rate-limit.ts`, withdrawals/orders/contact) is now backed by a
+  **shared Redis sliding-window** (atomic Lua over a sorted set) when `REDIS_URL` is set, with the
+  in-process limiter as the fallback (single node) and a fail-open-to-local on a Redis blip. New
+  `src/lib/redis.ts` (lazy ioredis singleton). Call sites updated to `await`.
+- **Auth limiter** now uses better-auth **`storage: "database"`** (new `RateLimit` model +
+  migration) so `/api/auth/*` brute-force limits are shared across replicas too — chosen over Redis
+  secondaryStorage specifically so it doesn't disturb session storage or the LoginHistory hook.
+- Together these make it safe to run **multiple web replicas**. `.env.example` documents `REDIS_URL`.
+- **Verified** end to end: the Lua sliding-window (limit 3/60s → 3 ok, 4th+ denied with retry-after,
+  key auto-expires); the live app with Redis — `/api/auth/sign-in` 6× → `429` via the DB store (and
+  the `RateLimit` table populated), and a contact submit wrote `rl:contact:submit:*` to Redis;
+  production build + typecheck + lint green; local dev falls back to in-process (REDIS_URL unset).
+
 ## 2026-07-12 — Deployability: Docker, security headers, health check
 - **Dockerised the whole stack**: multi-stage `Dockerfile` (a lean Next.js **standalone** web
   runner + a full-workspace image that runs any service via tsx) and `docker-compose.yml`

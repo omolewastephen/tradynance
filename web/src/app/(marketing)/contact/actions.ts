@@ -17,7 +17,7 @@ export type ContactResult = { ok: true } | { ok: false; error: string };
 export async function submitContact(formData: FormData): Promise<ContactResult> {
   // Public endpoint → rate-limit by IP to stop spam.
   const ip = await clientIp();
-  const limited = enforceRateLimit("contact:submit", ip, 5, 10 * 60_000);
+  const limited = await enforceRateLimit("contact:submit", ip, 5, 10 * 60_000);
   if (!limited.ok) return { ok: false, error: limited.error };
 
   const parsed = schema.safeParse({
