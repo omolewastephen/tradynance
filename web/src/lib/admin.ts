@@ -6,6 +6,8 @@ import type { Role } from "@tradynance/core";
 export const USER_ADMIN_ROLES: Role[] = ["SUPER_ADMIN", "ADMIN"];
 export const FINANCE_ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "FINANCE"];
 export const COMPLIANCE_ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "COMPLIANCE"];
+// Marketing/blog/contact CMS management.
+export const CONTENT_ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
 export const ANY_ADMIN_ROLES: Role[] = [
   "SUPER_ADMIN",
   "ADMIN",

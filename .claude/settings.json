@@ -227,7 +227,10 @@
       "Bash(node web3-e2e.js)",
       "Bash(curl -s -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)",
       "Bash(rm src/app/page.tsx && mkdir -p \"src/app/\\(marketing\\)/about\" \"src/app/\\(marketing\\)/contact\" \"src/app/\\(marketing\\)/blog/[slug]\" && echo \"scaffolded\")",
-      "Bash(node -e \"let f=require\\('fs'\\);let p='prisma/seed.ts';let s=f.readFileSync\\(p,'utf8'\\);if\\(!s.includes\\('seedCms'\\)\\){s=s.replace\\('import { seedNft } from \\\\\"./seed-nft\\\\\";','import { seedNft } from \\\\\"./seed-nft\\\\\";\\\\nimport { seedCms } from \\\\\"./seed-cms\\\\\";'\\);s=s.replace\\('await seedNft\\(\\);','await seedNft\\(\\);\\\\n await seedCms\\(\\);'\\);f.writeFileSync\\(p,s\\);console.log\\('wired'\\);}else console.log\\('already'\\);\")"
+      "Bash(node -e \"let f=require\\('fs'\\);let p='prisma/seed.ts';let s=f.readFileSync\\(p,'utf8'\\);if\\(!s.includes\\('seedCms'\\)\\){s=s.replace\\('import { seedNft } from \\\\\"./seed-nft\\\\\";','import { seedNft } from \\\\\"./seed-nft\\\\\";\\\\nimport { seedCms } from \\\\\"./seed-cms\\\\\";'\\);s=s.replace\\('await seedNft\\(\\);','await seedNft\\(\\);\\\\n await seedCms\\(\\);'\\);f.writeFileSync\\(p,s\\);console.log\\('wired'\\);}else console.log\\('already'\\);\")",
+      "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT name, subject, status FROM \\\\\"ContactMessage\\\\\" ORDER BY \\\\\"createdAt\\\\\" DESC LIMIT 3;\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/admin/messages)",
+      "Bash(node cms-e2e.js)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

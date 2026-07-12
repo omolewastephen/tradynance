@@ -19,6 +19,9 @@ import {
   Banknote,
   LayoutGrid,
   Users,
+  Newspaper,
+  Inbox,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +55,9 @@ export const adminSection: NavSection = {
     { href: "/admin/kyc", label: "KYC review", icon: ShieldQuestion },
     { href: "/admin/deposits", label: "Deposits", icon: Landmark },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Banknote },
+    { href: "/admin/blog", label: "Blog", icon: Newspaper },
+    { href: "/admin/content", label: "Site content", icon: FileText },
+    { href: "/admin/messages", label: "Messages", icon: Inbox },
     { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   ],
 };
