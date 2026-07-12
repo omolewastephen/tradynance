@@ -3,6 +3,18 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 11b: Audit trail completeness
+- **Shared audit helper** `web/src/lib/audit.ts` — `recordAudit({ actorId, action, entityType,
+  entityId, metadata })` writes the append-only `AuditLog` and **captures the actor's IP** from
+  request headers; never throws into the caller (an audit failure can't break the action).
+- **Filled the gaps** — previously only admin actions were logged. Now user-initiated security &
+  money-lifecycle events are too: `withdrawal.request` / `.confirm` / `.cancel`,
+  `security.anti_phishing_update`, `security.whitelist_add` / `_remove` / `_only`. The existing
+  admin actions (user status/role/KYC/2FA, deposit manual-credit, withdrawal approve/reject) were
+  refactored onto the same helper so they now capture IP too.
+- **Verified**: drove the anti-phishing update through the browser → one `AuditLog` row
+  (`security.anti_phishing_update`, entity `User`, `ipAddress ::1`), no console errors.
+
 ## 2026-07-12 — Phase 11a: Rate limiting
 - **Auth surface**: enabled better-auth's built-in rate limiter (`enabled: true` — on in dev too),
   100 req/60s/IP baseline with stricter custom rules: sign-in 5/60s, sign-up 5/300s,

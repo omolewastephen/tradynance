@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { recordAudit } from "@/lib/audit";
 
 const antiPhishingSchema = z
   .string()
@@ -22,6 +23,12 @@ export async function updateAntiPhishingCode(rawCode: string) {
     data: { antiPhishingCode: code },
   });
 
+  await recordAudit({
+    actorId: session.user.id,
+    action: "security.anti_phishing_update",
+    entityType: "User",
+    entityId: session.user.id,
+  });
   return { code };
 }
 
@@ -63,6 +70,12 @@ export async function addWhitelistAddress(formData: FormData): Promise<Whitelist
       memo: input.memo || undefined,
     },
   });
+  await recordAudit({
+    actorId: session.user.id,
+    action: "security.whitelist_add",
+    entityType: "WithdrawalWhitelist",
+    metadata: { network: input.network.toUpperCase(), address: input.address, label: input.label },
+  });
   revalidatePath("/settings/security");
   return { ok: true };
 }
@@ -70,9 +83,17 @@ export async function addWhitelistAddress(formData: FormData): Promise<Whitelist
 export async function removeWhitelistAddress(id: string): Promise<WhitelistResult> {
   const session = await requireUser();
   // Scope the delete to the owner so a user can't remove someone else's entry.
-  await prisma.withdrawalWhitelist.deleteMany({
+  const deleted = await prisma.withdrawalWhitelist.deleteMany({
     where: { id, userId: session.user.id },
   });
+  if (deleted.count > 0) {
+    await recordAudit({
+      actorId: session.user.id,
+      action: "security.whitelist_remove",
+      entityType: "WithdrawalWhitelist",
+      entityId: id,
+    });
+  }
   revalidatePath("/settings/security");
   return { ok: true };
 }
@@ -82,6 +103,13 @@ export async function setWhitelistOnly(enabled: boolean): Promise<WhitelistResul
   await prisma.user.update({
     where: { id: session.user.id },
     data: { withdrawalWhitelistOnly: enabled },
+  });
+  await recordAudit({
+    actorId: session.user.id,
+    action: "security.whitelist_only",
+    entityType: "User",
+    entityId: session.user.id,
+    metadata: { enabled },
   });
   revalidatePath("/settings/security");
   return { ok: true };

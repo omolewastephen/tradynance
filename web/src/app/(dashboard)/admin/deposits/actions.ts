@@ -7,6 +7,7 @@ import { z } from "zod";
 import { creditDeposit, type PrismaClient } from "@tradynance/core";
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { recordAudit } from "@/lib/audit";
 import { getOrCreateWallet } from "@/lib/wallet";
 
 const FINANCE_ROLES = ["SUPER_ADMIN", "ADMIN", "FINANCE"] as const;
@@ -80,19 +81,17 @@ export async function manualCreditDeposit(formData: FormData): Promise<ManualCre
     actorId: session.user.id,
   });
 
-  await prisma.auditLog.create({
-    data: {
-      actorId: session.user.id,
-      action: "deposit.manual_credit",
-      entityType: "Deposit",
-      entityId: deposit.id,
-      metadata: {
-        email: input.email,
-        asset: input.assetSymbol,
-        network: input.network,
-        amount: input.amount,
-        note: input.note ?? null,
-      },
+  await recordAudit({
+    actorId: session.user.id,
+    action: "deposit.manual_credit",
+    entityType: "Deposit",
+    entityId: deposit.id,
+    metadata: {
+      email: input.email,
+      asset: input.assetSymbol,
+      network: input.network,
+      amount: input.amount,
+      note: input.note ?? null,
     },
   });
 

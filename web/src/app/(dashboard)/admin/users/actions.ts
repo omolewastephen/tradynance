@@ -5,19 +5,19 @@ import { revalidatePath } from "next/cache";
 import { Prisma, type Role, type UserStatus, type KycStatus } from "@tradynance/core";
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { recordAudit } from "@/lib/audit";
 import { USER_ADMIN_ROLES, COMPLIANCE_ROLES } from "@/lib/admin";
 
 type Result = { ok: true } | { ok: false; error: string };
 
+// Thin wrapper over the shared, IP-capturing audit helper (all admin actions here act on a User).
 async function audit(
   actorId: string,
   action: string,
   userId: string,
   metadata: Prisma.InputJsonValue,
 ) {
-  await prisma.auditLog.create({
-    data: { actorId, action, entityType: "User", entityId: userId, metadata },
-  });
+  await recordAudit({ actorId, action, entityType: "User", entityId: userId, metadata });
 }
 
 const VALID_STATUS: UserStatus[] = ["ACTIVE", "SUSPENDED", "FROZEN", "BANNED"];

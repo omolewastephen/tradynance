@@ -13,6 +13,7 @@ import { auth } from "@/lib/auth";
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { recordAudit } from "@/lib/audit";
 import {
   generateOtp,
   hashOtp,
@@ -106,6 +107,14 @@ export async function requestWithdrawal(formData: FormData): Promise<RequestResu
   });
   sendWithdrawalOtp(user.email, code);
 
+  await recordAudit({
+    actorId: session.user.id,
+    action: "withdrawal.request",
+    entityType: "Withdrawal",
+    entityId: withdrawal.id,
+    metadata: { asset: input.assetSymbol, network: input.network, amount: input.amount, destination: input.destinationAddress },
+  });
+
   return {
     ok: true,
     withdrawalId: withdrawal.id,
@@ -193,6 +202,14 @@ export async function confirmWithdrawal(formData: FormData): Promise<ConfirmResu
     data: { confirmationCodeHash: null },
   });
 
+  await recordAudit({
+    actorId: session.user.id,
+    action: "withdrawal.confirm",
+    entityType: "Withdrawal",
+    entityId: withdrawal.id,
+    metadata: { amount: withdrawal.amount.toString(), status: "PENDING" },
+  });
+
   revalidatePath("/withdraw");
   revalidatePath("/wallet");
   return { ok: true };
@@ -211,6 +228,13 @@ export async function cancelWithdrawal(withdrawalId: string): Promise<ConfirmRes
     withdrawalId,
     status: "CANCELLED",
     actorId: session.user.id,
+  });
+  await recordAudit({
+    actorId: session.user.id,
+    action: "withdrawal.cancel",
+    entityType: "Withdrawal",
+    entityId: withdrawalId,
+    metadata: { fromStatus: withdrawal.status },
   });
   revalidatePath("/withdraw");
   revalidatePath("/wallet");

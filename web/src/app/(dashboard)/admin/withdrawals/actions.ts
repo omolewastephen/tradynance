@@ -10,6 +10,7 @@ import {
 } from "@tradynance/core";
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { recordAudit } from "@/lib/audit";
 
 const FINANCE_ROLES = ["SUPER_ADMIN", "ADMIN", "FINANCE"] as const;
 
@@ -55,14 +56,12 @@ export async function approveWithdrawal(
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
-  await prisma.auditLog.create({
-    data: {
-      actorId: session.user.id,
-      action: "withdrawal.approve",
-      entityType: "Withdrawal",
-      entityId: withdrawalId,
-      metadata: { txHash: txHash?.trim() || null },
-    },
+  await recordAudit({
+    actorId: session.user.id,
+    action: "withdrawal.approve",
+    entityType: "Withdrawal",
+    entityId: withdrawalId,
+    metadata: { txHash: txHash?.trim() || null },
   });
   await notifyWithdrawal(withdrawalId, true);
   revalidatePath("/admin/withdrawals");
@@ -80,14 +79,12 @@ export async function rejectWithdrawal(
     reason: reason.trim() || "Rejected by admin",
     actorId: session.user.id,
   });
-  await prisma.auditLog.create({
-    data: {
-      actorId: session.user.id,
-      action: "withdrawal.reject",
-      entityType: "Withdrawal",
-      entityId: withdrawalId,
-      metadata: { reason: reason.trim() || null },
-    },
+  await recordAudit({
+    actorId: session.user.id,
+    action: "withdrawal.reject",
+    entityType: "Withdrawal",
+    entityId: withdrawalId,
+    metadata: { reason: reason.trim() || null },
   });
   await notifyWithdrawal(withdrawalId, false, reason.trim() || undefined);
   revalidatePath("/admin/withdrawals");
