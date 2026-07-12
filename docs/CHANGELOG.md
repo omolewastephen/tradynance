@@ -3,6 +3,22 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 12a: Real transactional email
+- **`web/src/lib/email.ts`** — env-gated mailer: with `RESEND_API_KEY` set it sends via Resend's
+  HTTP API (no SDK dependency, just `fetch`); without one it logs to the console exactly as before,
+  so reset / verification / withdrawal-OTP flows stay testable end to end in dev. Same "wired but
+  inert until you supply the credential" pattern as the Sentry work.
+- **Branded HTML template** (inline styles for email-client compatibility) + three helpers
+  (password reset, email verification, withdrawal OTP). Transactional emails include the user's
+  **anti-phishing code** so recipients can trust them.
+- Replaced the three `console.log` stubs (`auth.ts` reset + verification, `withdrawal.ts` OTP) with
+  real sends; `.env.example` documents `RESEND_API_KEY` / `EMAIL_FROM`.
+- **Also fixed** a rate-limit rule that keyed the wrong path (`/forget-password` → the real
+  `/request-password-reset`), so the reset-spam limit actually applies.
+- **Verified**: `request-password-reset` → the mailer fired via better-auth's flow, rendered the
+  branded template with the reset link + anti-phishing code (console fallback, no key set);
+  reset-spam limit confirmed (3 → 200, 4th → 429).
+
 ## 2026-07-12 — Phase 11d: CI/CD (GitHub Actions)
 - **`.github/workflows/ci.yml`** — on push to master + every PR: spins a Postgres 16 service,
   `npm ci`, `prisma generate` + `migrate deploy`, seeds, then runs **typecheck → lint → core money

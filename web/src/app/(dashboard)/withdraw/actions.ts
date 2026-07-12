@@ -61,7 +61,7 @@ export async function requestWithdrawal(formData: FormData): Promise<RequestResu
   // Whitelist enforcement.
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: session.user.id },
-    select: { withdrawalWhitelistOnly: true, twoFactorEnabled: true, email: true },
+    select: { withdrawalWhitelistOnly: true, twoFactorEnabled: true, email: true, antiPhishingCode: true },
   });
   if (user.withdrawalWhitelistOnly) {
     const whitelisted = await prisma.withdrawalWhitelist.findFirst({
@@ -105,7 +105,7 @@ export async function requestWithdrawal(formData: FormData): Promise<RequestResu
       confirmationExpiresAt: new Date(Date.now() + OTP_TTL_MS),
     },
   });
-  sendWithdrawalOtp(user.email, code);
+  await sendWithdrawalOtp(user.email, code, user.antiPhishingCode);
 
   await recordAudit({
     actorId: session.user.id,

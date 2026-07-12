@@ -4,6 +4,10 @@ import { username, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 
 import { prisma } from "@/lib/prisma";
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail as sendVerifyEmail,
+} from "@/lib/email";
 
 function generateReferralCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I ambiguity
@@ -25,9 +29,12 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     autoSignIn: false,
     sendResetPassword: async ({ user, url }) => {
-      // TODO(Phase 1 follow-up): wire a real transactional email provider (Resend/SendGrid).
-      // Logged to console so the reset flow is testable end to end in dev.
-      console.log(`[auth] password reset for ${user.email}: ${url}`);
+      // Real send via Resend when RESEND_API_KEY is set; console fallback in dev (see email.ts).
+      await sendPasswordResetEmail(
+        user.email,
+        url,
+        (user as { antiPhishingCode?: string }).antiPhishingCode,
+      );
     },
   },
 
@@ -35,8 +42,7 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      // TODO(Phase 1 follow-up): wire a real transactional email provider.
-      console.log(`[auth] verification email for ${user.email}: ${url}`);
+      await sendVerifyEmail(user.email, url);
     },
   },
 
@@ -131,7 +137,7 @@ export const auth = betterAuth({
     customRules: {
       "/sign-in/email": { window: 60, max: 5 }, // password guessing
       "/sign-up/email": { window: 300, max: 5 }, // signup abuse
-      "/forget-password": { window: 300, max: 3 }, // reset spam
+      "/request-password-reset": { window: 300, max: 3 }, // reset spam
       "/reset-password": { window: 300, max: 5 },
       "/two-factor/verify-totp": { window: 60, max: 5 }, // TOTP guessing
       "/two-factor/verify-backup-code": { window: 300, max: 5 },

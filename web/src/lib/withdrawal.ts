@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomInt } from "node:crypto";
 
 import { prisma } from "@/lib/prisma";
+import { sendWithdrawalOtpEmail } from "@/lib/email";
 
 export const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -13,11 +14,10 @@ export function hashOtp(code: string): string {
   return createHash("sha256").update(code).digest("hex");
 }
 
-// TODO(Phase 1/3 follow-up): route through a real transactional email provider. Logged to
-// console for now so the withdrawal confirmation flow is testable end to end in dev — same
-// pattern as the verification/reset emails in src/lib/auth.ts.
-export function sendWithdrawalOtp(email: string, code: string) {
-  console.log(`[auth] withdrawal confirmation code for ${email}: ${code}`);
+// Real send via Resend when RESEND_API_KEY is set; console fallback in dev (see email.ts). The
+// user's anti-phishing code is included so they can trust the message.
+export async function sendWithdrawalOtp(email: string, code: string, antiPhishing?: string | null) {
+  await sendWithdrawalOtpEmail(email, code, antiPhishing);
 }
 
 /** Available balance for a (user, asset, network) wallet = balance − lockedBalance. */
