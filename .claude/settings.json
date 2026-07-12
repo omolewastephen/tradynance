@@ -216,7 +216,11 @@
       "Bash(echo \"typecheck exit=$?\")",
       "Bash(gh --version)",
       "Bash(gh run *)",
-      "Bash(curl -s -o /dev/null -w \"request-password-reset=%{http_code}\\\\n\" -X POST http://localhost:3000/api/auth/request-password-reset -H \"Content-Type: application/json\" -d '{\"email\":\"trader1@example.com\",\"redirectTo\":\"/reset-password\"}')"
+      "Bash(curl -s -o /dev/null -w \"request-password-reset=%{http_code}\\\\n\" -X POST http://localhost:3000/api/auth/request-password-reset -H \"Content-Type: application/json\" -d '{\"email\":\"trader1@example.com\",\"redirectTo\":\"/reset-password\"}')",
+      "Bash(echo \"core tsc=$?\")",
+      "Bash(echo \"web tsc=$?\")",
+      "Bash(node_modules/.bin/tsx --env-file=web/.env packages/core/scripts/broadcast-check.ts)",
+      "Bash(echo \"typecheck=$?\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

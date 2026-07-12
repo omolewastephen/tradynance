@@ -3,6 +3,24 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 12b: On-chain withdrawal broadcast (ETH Sepolia testnet)
+- **`packages/core/src/chain/`** — real on-chain settlement of approved withdrawals. `evm-withdraw.ts`
+  signs a native-ETH transfer from the custodial **hot wallet** (a dedicated index of the same
+  `HD_WALLET_MNEMONIC`) and broadcasts it via the Sepolia RPC (viem), returning the real tx hash;
+  `broadcast.ts` dispatches per-network and falls back to `{ broadcast: false }` for chains without
+  an implementation (BTC UTXO/PSBT deferred).
+- **Admin approve is now real** — previously it just recorded an admin-pasted hash. Now: leave the
+  hash blank → for a broadcastable network it signs + broadcasts **first** (funds stay locked),
+  persists the real hash, then settles the ledger — so we never debit without a confirmed send, and
+  never leave a sent-but-unrecorded withdrawal; broadcast failure (e.g. unfunded hot wallet) touches
+  nothing. Pasting a hash keeps the manual path (BTC / out-of-band). Broadcast/settle errors report
+  to Sentry. Admin UI hint updated.
+- **Verified** (`scripts/broadcast-check.ts`): hot-account derivation deterministic + valid
+  (`0x2cd1…939d`), BTC routes to manual fallback, and a live Sepolia send **reaches the chain and is
+  rejected only for insufficient funds** — proving signer→RPC→chain end to end. Fund the hot wallet
+  with Sepolia ETH to complete a live broadcast. (Not in `test:core`/CI — it needs the mnemonic +
+  network.) `.env.example` documents `HOT_WALLET_INDEX`.
+
 ## 2026-07-12 — Phase 12a: Real transactional email
 - **`web/src/lib/email.ts`** — env-gated mailer: with `RESEND_API_KEY` set it sends via Resend's
   HTTP API (no SDK dependency, just `fetch`); without one it logs to the console exactly as before,

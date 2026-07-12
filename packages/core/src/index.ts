@@ -14,5 +14,7 @@ export * from "./vip.js";
 export * from "./staking.js";
 export * from "./launchpad.js";
 export * from "./nft.js";
+export * from "./chain/broadcast.js";
+export * from "./chain/evm-withdraw.js";
 export * from "./wallet/derivation.js";
 export * from "./wallet/provision.js";

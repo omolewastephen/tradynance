@@ -18,8 +18,9 @@ export function ReviewActions({ withdrawalId }: { withdrawalId: string }) {
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="tx hash (optional)"
-          className="h-8 w-40 font-mono text-xs"
+          placeholder="tx hash — blank = broadcast"
+          title="Leave empty to sign + broadcast on-chain (ETH Sepolia). Paste a hash to settle manually (e.g. BTC)."
+          className="h-8 w-48 font-mono text-xs"
         />
         <Button
           size="sm"
