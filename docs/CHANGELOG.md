@@ -3,6 +3,24 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 10d: Staking
+- **`packages/core/src/staking.ts`** — stake an asset for yield, same ledger discipline: `stake`
+  debits principal from the SPOT wallet (a `STAKE` entry) and opens a `StakePosition`; `redeemStake`
+  returns principal (`STAKE` credit) + earned yield (`STAKING_REWARD` credit). Rewards accrue
+  **continuously and are computed on demand** from elapsed time (`accruedReward`, pure) — no
+  background job to drift; locked stakes stop accruing at unlock; flexible (lockDays 0) redeem
+  anytime, locked can't redeem early. Reward is platform yield (unmodeled source, like fees).
+- **Schema**: `StakingProduct` + `StakePosition` (+ `StakeStatus`) models, `STAKE` /
+  `STAKING_REWARD` ledger types (migration `20260711234504_staking`). 6 products seeded
+  (`prisma/seed-staking.ts`, idempotent, wired into the main seed): USDT flexible/30d/90d
+  (8/12/16%), BTC flexible (2.5%), ETH 30d (5%), SOL 60d (9%).
+- **`/staking` page**: product cards (APR, lock, min, available, stake input) + a "Your stakes"
+  table with **live-ticking accrued reward** and redeem (disabled while locked) + history. Nav entry.
+- **Verified**: 14-assertion core test (`staking-test.ts`) — accrual math, principal debit, redeem
+  returns principal+reward, `STAKE`/`STAKING_REWARD` entries, no early locked redeem, double-redeem
+  rejected, insufficient/below-min rejected, **ledger conservation**. Browser: staked 2000 USDT
+  (live reward accrued), redeemed, no console errors.
+
 ## 2026-07-12 — Phase 10c: VIP tiers
 - **`packages/core/src/vip.ts`** — 5 volume-based tiers (VIP 0–4) with taker-fee discounts
   (10–35%). `get30dVolume` sums a user's trailing-30-day spot filled quote + futures notional;

@@ -104,6 +104,7 @@ model User {
 
   commissionsEarned    ReferralCommission[] @relation("CommissionsEarned")
   commissionsGenerated ReferralCommission[] @relation("CommissionsGenerated")
+  stakePositions       StakePosition[]
 
   @@index([status])
   @@index([kycStatus])
@@ -134,6 +135,8 @@ model Asset {
   conversionTo   Conversion[]   @relation("ConvertTo")
 
   referralCommissions ReferralCommission[]
+  stakingProducts     StakingProduct[]
+  stakePositions      StakePosition[]
 }
 
 model AssetNetwork {
@@ -201,6 +204,8 @@ enum LedgerEntryType {
   FUNDING // periodic perp funding payment
   LIQUIDATION // residual equity returned when a position is force-closed
   REFERRAL_COMMISSION // rebate credited to a referrer from a referee's trading fee
+  STAKE // principal moved out to / back from a stake position (signed)
+  STAKING_REWARD // yield credited on redeeming a stake
 }
 
 enum LedgerEntryStatus {
@@ -553,6 +558,53 @@ model ReferralCommission {
 
   @@index([referrerId, createdAt])
   @@index([refereeId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Staking — lock an asset for yield. Principal moves out of the SPOT wallet on stake and back
+// (+ reward) on redeem, via STAKE / STAKING_REWARD ledger entries. Rewards accrue continuously
+// and are computed on demand from elapsed time (see packages/core/src/staking.ts) — no separate
+// accrual job needed. Reward comes from platform yield (an unmodeled source, like trade fees).
+// ─────────────────────────────────────────────────────────────────────────
+
+model StakingProduct {
+  id       String  @id @default(cuid())
+  assetId  String
+  asset    Asset   @relation(fields: [assetId], references: [id])
+  name     String
+  aprBps   Int // annual rate in bps (800 = 8%)
+  lockDays Int // 0 = flexible (redeem anytime)
+  minStake Decimal @db.Decimal(36, 18)
+  isActive Boolean @default(true)
+
+  createdAt DateTime        @default(now())
+  positions StakePosition[]
+}
+
+enum StakeStatus {
+  ACTIVE
+  REDEEMED
+}
+
+model StakePosition {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  productId String
+  product   StakingProduct @relation(fields: [productId], references: [id])
+  assetId   String
+  asset     Asset          @relation(fields: [assetId], references: [id])
+
+  principal  Decimal     @db.Decimal(36, 18)
+  aprBps     Int // snapshot at stake time
+  lockDays   Int // snapshot at stake time
+  startAt    DateTime    @default(now())
+  unlockAt   DateTime? // startAt + lockDays (null for flexible)
+  status     StakeStatus @default(ACTIVE)
+  rewardPaid Decimal     @default(0) @db.Decimal(36, 18)
+  redeemedAt DateTime?
+
+  @@index([userId, status])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

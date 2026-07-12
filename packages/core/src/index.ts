@@ -11,5 +11,6 @@ export * from "./futures.js";
 export * from "./notifications.js";
 export * from "./referrals.js";
 export * from "./vip.js";
+export * from "./staking.js";
 export * from "./wallet/derivation.js";
 export * from "./wallet/provision.js";

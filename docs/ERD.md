@@ -92,6 +92,11 @@ a single FEE `LedgerEntry` (`ledgerEntryId` UNIQUE = idempotency key), settled b
 the referrer's SPOT wallet. The referral relationship lives on **User** (`referralCode` /
 `referredById` / self-relation `referrals`), from Phase 1.
 
+**StakingProduct** → **StakePosition** — a yield product (asset, APR bps, lock days, min stake)
+and a user's stake in it. Principal moves out of the SPOT wallet on stake (`STAKE` debit) and back
+on redeem (`STAKE` credit) with earned yield (`STAKING_REWARD` credit); rewards accrue continuously
+and are computed on demand from elapsed time (`packages/core/src/staking.ts`) — no accrual table.
+
 **Notification** — in-app user notifications (`NotificationType`: DEPOSIT/WITHDRAWAL/TRADE/
 LIQUIDATION/REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), written by the core money functions
 (in-tx, via `packages/core/src/notifications.ts`) and the app/service layers (post-tx). `read`
