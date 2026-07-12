@@ -174,6 +174,17 @@ app and the services depend on it, never the reverse. All money movement flows t
     (`.github/workflows/ci.yml`: Postgres service → migrate → seed-ci → typecheck/lint/test:core/
     build; `seed-tickers.ts` + `seed-ci.ts` make the suite CI-runnable). **Build plan complete.**
 
+### Post-plan enhancements
+12. ✅ Real value movement (turns the custody simulation real, all env-gated — inert until you
+    supply the credential): **email** (`src/lib/email.ts` — Resend HTTP API + console fallback;
+    reset/verification/withdrawal-OTP emails now real, branded, anti-phishing-stamped),
+    **on-chain withdrawal broadcast** (`packages/core/src/chain/` — signs + broadcasts native ETH
+    from the hot wallet on Sepolia via viem; admin approve broadcasts→records hash→settles, manual
+    fallback for BTC; verified reaching the chain, needs the hot wallet funded), **pay-from-wallet**
+    (`components/web3/` — viem + `window.ethereum`, send a deposit from a browser wallet to your
+    Sepolia deposit address; route-isolated chunk). Deferred: BTC broadcast, WalletConnect QR/mobile,
+    SIWE web3 login, ERC-20 tokens.
+
 ## Running locally
 From the repo root:
 ```
