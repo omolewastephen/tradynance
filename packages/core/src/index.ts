@@ -14,7 +14,7 @@ export * from "./vip.js";
 export * from "./staking.js";
 export * from "./launchpad.js";
 export * from "./nft.js";
-export * from "./chain/broadcast.js";
-export * from "./chain/evm-withdraw.js";
+// NB: chain/ (viem) is intentionally NOT re-exported here — import it from "@tradynance/core/chain"
+// so viem/ox doesn't leak into every core-importing page's bundle. See src/chain/index.ts.
 export * from "./wallet/derivation.js";
 export * from "./wallet/provision.js";

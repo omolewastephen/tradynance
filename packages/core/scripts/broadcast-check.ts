@@ -3,7 +3,7 @@
 // funded, broadcasts a tiny transfer to prove the whole signer→RPC path end to end. If unfunded,
 // it reports the funding requirement (the path is proven up to needing testnet ETH). Run with:
 //   node_modules/.bin/tsx --env-file=web/.env packages/core/scripts/broadcast-check.ts
-import { hotEvmAccount, broadcastWithdrawal, broadcastEvmWithdrawal } from "../src/index.js";
+import { hotEvmAccount, broadcastWithdrawal, broadcastEvmWithdrawal } from "../src/chain/index.js";
 import { createPublicClient, http, isAddress, formatEther } from "viem";
 import { sepolia } from "viem/chains";
 

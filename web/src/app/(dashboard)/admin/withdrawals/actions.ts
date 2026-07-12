@@ -5,10 +5,10 @@ import { revalidatePath } from "next/cache";
 import {
   settleWithdrawal,
   releaseWithdrawal,
-  broadcastWithdrawal,
   notify,
   type PrismaClient,
 } from "@tradynance/core";
+import { broadcastWithdrawal } from "@tradynance/core/chain";
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { recordAudit } from "@/lib/audit";
