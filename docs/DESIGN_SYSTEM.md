@@ -58,32 +58,42 @@ fontFamily: {
 Rule: mobile form inputs render at ≥16px regardless of the scale above (prevents iOS auto-zoom
 on focus) — dashboard density rules don't apply inside `<input>`.
 
-## Color tokens
-Base brand values are fixed in CLAUDE.md. Mapped to semantic tokens below (dark is default):
+## Color tokens — "Onyx & Emerald" (v2, Phase 13)
+Premium dark exchange palette. The deepened emerald keeps the brand identity while the neutral-onyx
+surfaces + electric-blue accent + rose "down" read more elegant/professional than the original
+slate-blue set. The whole app + marketing site theme off these; source of truth is
+`web/src/app/globals.css`. (Original v1 values are in git history.)
 
 ```css
 :root, [data-theme="dark"] {
-  --background: #08090C;
-  --surface: #111827;           /* cards, panels */
-  --surface-raised: #151E33;    /* popovers, dropdowns, modals */
-  --foreground: #EDEFF3;        /* not pure #FFF — avoids halation on near-black */
-  --foreground-muted: #8A93A6;
+  --background: #0A0B0E;         /* onyx, faint cool */
+  --surface: #13151C;           /* cards, panels */
+  --surface-raised: #1B1E27;    /* popovers, dropdowns, modals */
+  --foreground: #F3F5F9;        /* not pure #FFF — avoids halation on near-black */
+  --foreground-muted: #99A2B3;
+  --foreground-subtle: #626C7B; /* timestamps, tertiary labels */
   --border: rgba(255,255,255,0.08);
-  --border-subtle: rgba(255,255,255,0.06);
+  --border-subtle: rgba(255,255,255,0.05);
 
-  --primary: #18C964;           /* buy / positive / brand */
-  --primary-foreground: #062A16;
-  --accent: #2563EB;            /* links, focus ring, secondary actions */
+  --primary: #12D07A;           /* buy / positive / brand — deepened emerald */
+  --primary-foreground: #04140A;
+  --primary-muted: rgba(18,208,122,0.12); /* tints, active nav */
+  --accent: #4C82FB;            /* links, focus ring, secondary actions — electric blue */
   --accent-foreground: #FFFFFF;
-  --danger: #EF4444;            /* sell / negative / destructive */
+  --danger: #F6465D;            /* sell / negative / destructive — rose */
   --danger-foreground: #FFFFFF;
-  --warning: #F59E0B;
+  --warning: #F5A524;
   --warning-foreground: #1A1203;
 
   --price-up: var(--primary);
   --price-down: var(--danger);
   --ring: var(--accent);
+
+  --gradient-brand: linear-gradient(135deg, #12D07A 0%, #4C82FB 100%); /* logo tile, hero accents */
+  --shadow-glow: 0 0 0 1px rgba(18,208,122,.15), 0 8px 30px -6px rgba(18,208,122,.28);
 }
+
+/* Utilities in globals.css: .text-gradient-brand, .bg-brand-glow, .bg-grid, .glass */
 
 [data-theme="light"] {
   --background: #FFFFFF;

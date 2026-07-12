@@ -224,7 +224,8 @@
       "Bash(npm uninstall *)",
       "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT a.symbol, an.network FROM \\\\\"AssetNetwork\\\\\" an JOIN \\\\\"Asset\\\\\" a ON a.id=an.\\\\\"assetId\\\\\" WHERE a.symbol='ETH';\")",
       "Bash(curl -s -o /tmp/signin.json -w \"%{http_code}\" -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -d '{\"email\":\"trader1@example.com\",\"password\":\"Password123\"}')",
-      "Bash(node web3-e2e.js)"
+      "Bash(node web3-e2e.js)",
+      "Bash(curl -s -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

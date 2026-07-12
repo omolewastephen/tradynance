@@ -3,52 +3,68 @@
 
 /* Dark is the default surface (data-theme="dark" set in <html>); light overrides below.
    See docs/DESIGN_SYSTEM.md for rationale — do not hand-edit values without updating that file too. */
+/* Onyx & Emerald — premium dark exchange palette. Deepened emerald identity, electric-blue
+   accent, neutral-onyx surfaces, rose "down". Everything themes off these vars, so the whole
+   app + marketing site inherit this palette. */
 :root {
-  --background: #08090c;
-  --surface: #111827;
-  --surface-raised: #151e33;
-  --foreground: #edeff3;
-  --foreground-muted: #8a93a6;
+  --background: #0a0b0e;
+  --surface: #13151c;
+  --surface-raised: #1b1e27;
+  --foreground: #f3f5f9;
+  --foreground-muted: #99a2b3;
+  --foreground-subtle: #626c7b;
   --border: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.05);
 
-  --primary: #18c964;
-  --primary-foreground: #062a16;
-  --accent: #2563eb;
+  --primary: #12d07a;
+  --primary-foreground: #04140a;
+  --primary-muted: rgba(18, 208, 122, 0.12);
+  --primary-glow: rgba(18, 208, 122, 0.28);
+  --accent: #4c82fb;
   --accent-foreground: #ffffff;
-  --danger: #ef4444;
+  --danger: #f6465d;
   --danger-foreground: #ffffff;
-  --warning: #f59e0b;
+  --warning: #f5a524;
   --warning-foreground: #1a1203;
 
   --price-up: var(--primary);
   --price-down: var(--danger);
   --ring: var(--accent);
 
-  --shadow-elevation-2: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
-  --shadow-elevation-3: 0 24px 64px -12px rgba(0, 0, 0, 0.6);
+  /* brand gradient for hero/marketing/logo washes */
+  --gradient-brand: linear-gradient(135deg, #12d07a 0%, #4c82fb 100%);
+
+  --shadow-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-2: 0 10px 30px -8px rgba(0, 0, 0, 0.55);
+  --shadow-elevation-3: 0 34px 80px -24px rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 0 1px rgba(18, 208, 122, 0.15), 0 8px 30px -6px var(--primary-glow);
 }
 
 [data-theme="light"] {
   --background: #ffffff;
-  --surface: #f7f8fa;
+  --surface: #f6f8fb;
   --surface-raised: #ffffff;
-  --foreground: #0f172a;
-  --foreground-muted: #5b6472;
-  --border: rgba(15, 23, 42, 0.08);
-  --border-subtle: rgba(15, 23, 42, 0.06);
+  --foreground: #0b0f19;
+  --foreground-muted: #5a6473;
+  --foreground-subtle: #8a94a6;
+  --border: rgba(11, 15, 25, 0.1);
+  --border-subtle: rgba(11, 15, 25, 0.06);
 
-  --primary: #109a4e;
+  --primary: #0fa968;
   --primary-foreground: #ffffff;
-  --accent: #2563eb;
+  --primary-muted: rgba(15, 169, 104, 0.1);
+  --primary-glow: rgba(15, 169, 104, 0.22);
+  --accent: #2e6bf5;
   --accent-foreground: #ffffff;
-  --danger: #dc2626;
+  --danger: #e23148;
   --danger-foreground: #ffffff;
   --warning: #b45309;
   --warning-foreground: #ffffff;
 
-  --shadow-elevation-2: 0 8px 24px -4px rgba(15, 23, 42, 0.12);
-  --shadow-elevation-3: 0 24px 64px -12px rgba(15, 23, 42, 0.18);
+  --shadow-elevation-1: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-elevation-2: 0 10px 30px -8px rgba(15, 23, 42, 0.12);
+  --shadow-elevation-3: 0 34px 80px -24px rgba(15, 23, 42, 0.18);
+  --shadow-glow: 0 0 0 1px rgba(15, 169, 104, 0.18), 0 8px 30px -6px var(--primary-glow);
 }
 
 @theme inline {
@@ -57,11 +73,13 @@
   --color-surface-raised: var(--surface-raised);
   --color-foreground: var(--foreground);
   --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
   --color-border: var(--border);
   --color-border-subtle: var(--border-subtle);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-muted: var(--primary-muted);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-danger: var(--danger);
@@ -101,8 +119,10 @@
   --text-data-lg: 1.25rem;
   --text-data-lg--line-height: 1.2;
 
+  --shadow-elevation-1: var(--shadow-elevation-1);
   --shadow-elevation-2: var(--shadow-elevation-2);
   --shadow-elevation-3: var(--shadow-elevation-3);
+  --shadow-glow: var(--shadow-glow);
 }
 
 body {
@@ -132,6 +152,39 @@ body {
 
 .animate-fade-rise {
   animation: fade-rise 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Premium surface utilities (marketing / auth / hero) ─────────────────── */
+
+/* Brand gradient text for headline accents. */
+.text-gradient-brand {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Soft radial brand wash behind hero sections (pointer-events-none decorative layer). */
+.bg-brand-glow {
+  background:
+    radial-gradient(60% 55% at 15% 0%, rgba(18, 208, 122, 0.14) 0%, transparent 60%),
+    radial-gradient(55% 55% at 100% 10%, rgba(76, 130, 251, 0.12) 0%, transparent 60%);
+}
+
+/* Frosted panel. */
+.glass {
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Fine grid texture for hero backdrops. */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%);
 }
 
 @media (prefers-reduced-motion: reduce) {
