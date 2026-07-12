@@ -7,7 +7,11 @@ import { prisma } from "@/lib/prisma";
 import { getOrCreateWallet } from "@/lib/wallet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoinIcon } from "@/components/brand/coin-icon";
+import { PayWithWalletLoader } from "@/components/web3/pay-with-wallet-loader";
 import { CopyAddress } from "./copy-address";
+
+// Networks where "pay from your own wallet" (wagmi/Sepolia) applies.
+const WEB3_PAY_NETWORKS = new Set(["ETH_SEPOLIA"]);
 
 export default async function DepositPage({
   params,
@@ -130,6 +134,10 @@ export default async function DepositPage({
                 the chain-watcher is running for this network they can be confirmed manually
                 by an admin.
               </p>
+
+              {WEB3_PAY_NETWORKS.has(selected.network) && (
+                <PayWithWalletLoader depositAddress={wallet.depositAddress} symbol={asset.symbol} />
+              )}
             </>
           ) : (
             <p className="rounded-sm border border-border-subtle bg-surface-raised px-3 py-3 text-sm text-foreground-muted">

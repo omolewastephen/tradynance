@@ -3,6 +3,24 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 12c: Pay-from-your-wallet (web3 deposits)
+- **`components/web3/pay-with-wallet.tsx`** — on an ETH_SEPOLIA deposit page, connect a browser
+  (EIP-1193 / injected, e.g. MetaMask) wallet and send the deposit straight to your custodial
+  deposit address on Sepolia. Handles connect / wrong-chain switch / send, shows the tx hash; the
+  chain-watcher then credits it through the same idempotent `creditDeposit` path — a nicer funding
+  UX, not a new money path.
+- **Pure viem, not wagmi** — `wagmi`'s connector barrel fails to build (its `tempo` connector
+  imports an unresolvable `accounts` module), so this uses viem + `window.ethereum` directly:
+  lighter, buildable, and viem was already a dependency. Loaded via a `dynamic(ssr:false)` client
+  loader so the web3 code is a **route-isolated async chunk** — First Load JS (103 kB) and
+  middleware (33 kB) are unchanged, and the deposit route grows only ~2 kB.
+- **Deferred**: WalletConnect mobile/QR (add `@walletconnect/ethereum-provider` behind
+  `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` and feed its provider into the same viem client) and SIWE
+  web3 **login** (auth-security-sensitive; not attempted without a wallet to exercise it).
+- **Verified**: production build green + bundle-isolated; deposit page renders the card and
+  **degrades gracefully** with no wallet extension ("No browser wallet detected"), no console
+  errors. `.env.example` documents `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`.
+
 ## 2026-07-12 — Phase 12b: On-chain withdrawal broadcast (ETH Sepolia testnet)
 - **`packages/core/src/chain/`** — real on-chain settlement of approved withdrawals. `evm-withdraw.ts`
   signs a native-ETH transfer from the custodial **hot wallet** (a dedicated index of the same
