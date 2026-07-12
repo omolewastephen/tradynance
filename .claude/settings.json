@@ -203,7 +203,8 @@
       "Bash(node_modules/.bin/tsx packages/core/scripts/staking-test.ts)",
       "Bash(echo \"web tsc exit=$?\")",
       "Bash(node_modules/.bin/tsx packages/core/scripts/launchpad-test.ts)",
-      "Bash(echo \"tsc exit=$?\")"
+      "Bash(echo \"tsc exit=$?\")",
+      "Bash(node_modules/.bin/tsx packages/core/scripts/nft-test.ts)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

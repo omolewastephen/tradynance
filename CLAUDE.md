@@ -157,9 +157,16 @@ app and the services depend on it, never the reverse. All money movement flows t
    UI (leverage slider, live-PnL positions, close, history). 29-assertion core test + browser E2E
    + live-engine liquidation verified. **Deferred:** cross margin, advanced order types (OCO,
    trailing stop, iceberg, reduce-only).
-10. ⬅ **NEXT** — Long-tail features (only after 0–9 are solid): notifications, referrals, VIP tiers,
-    staking, launchpad, NFT marketplace.
-11. Hardening: rate limiting, audit trail completeness, monitoring (Sentry), CI/CD.
+10. ✅ Long-tail features: **notifications** (Notification model + `notify()`; topbar bell +
+    `/notifications`; wired to deposit/withdrawal/fill/liquidation), **referrals** (fee-rebate
+    commissions off FEE ledger entries, idempotent; `/referrals` dashboard), **VIP tiers**
+    (30d-volume taker-fee discounts via `takerFeeBpsOverride`; `/vip`), **staking** (StakingProduct/
+    StakePosition, on-demand reward accrual, STAKE/STAKING_REWARD ledger; `/staking`), **launchpad**
+    (project + additive commitment/claim, LAUNCHPAD ledger; `/launchpad`), **NFT marketplace**
+    (collection/NFT/listing, list/buy/cancel with buyer→seller USDT settlement + 2% fee,
+    deterministic SVG art; `/nft`). Each: core fn + direct test (notif/referrals/vip/staking/
+    launchpad/nft, all conservation-checked) + browser E2E. `services/liquidation-engine` unchanged.
+11. ⬅ **NEXT** — Hardening: rate limiting, audit trail completeness, monitoring (Sentry), CI/CD.
 
 ## Running locally
 From the repo root:

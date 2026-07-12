@@ -13,5 +13,6 @@ export * from "./referrals.js";
 export * from "./vip.js";
 export * from "./staking.js";
 export * from "./launchpad.js";
+export * from "./nft.js";
 export * from "./wallet/derivation.js";
 export * from "./wallet/provision.js";

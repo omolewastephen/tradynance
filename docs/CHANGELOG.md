@@ -3,6 +3,25 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 10f: NFT marketplace
+- **`packages/core/src/nft.ts`** — list / cancel / buy. NFTs are unique (ownership is `Nft.ownerId`,
+  not a wallet balance), so only the USDT payment touches the ledger: `buyNft` in ONE transaction
+  debits the buyer (`NFT` entry), credits the seller minus a 2% marketplace fee (`NFT` entry),
+  transfers ownership, and closes the listing. Fee is platform revenue (unmodeled sink). List/cancel
+  are ownership-guarded and move no money.
+- **Schema**: `NftCollection`, `Nft`, `NftListing` (+ `ListingStatus`), `NFT` ledger type
+  (migration `20260712012048_nft_marketplace`). Seeded a "Tradynance Genesis" collection of 8
+  listed NFTs owned by an `nft-creator` system user (idempotent `seed-nft.ts`).
+- **Generative art, zero external assets**: `web/src/lib/nft-art.ts` turns each NFT's `imageSeed`
+  into a deterministic gradient-and-shapes **SVG** rendered as a data URI — no images to host/fetch,
+  same seed → same art.
+- **`/nft` page**: Marketplace tab (grid of listings, buy / your-listing+unlist) and My NFTs tab
+  (owned pieces with list / unlist). Nav entry.
+- **Verified**: 19-assertion core test (`nft-test.ts`) — list guards, buy debits buyer + credits
+  seller net of fee + transfers ownership + marks SOLD + notifies both, two-party conservation
+  (fee to platform), relist/cancel guards, insufficient funds. Browser: bought Zenith #08 for 180
+  USDT (balance −180 exactly, moved to My NFTs, relist UI shown), no console errors.
+
 ## 2026-07-12 — Phase 10e: Launchpad
 - **`packages/core/src/launchpad.ts`** — token sales with the usual ledger discipline.
   `commitToLaunchpad` debits the sale asset (USDT) from the SPOT wallet (a `LAUNCHPAD` entry),

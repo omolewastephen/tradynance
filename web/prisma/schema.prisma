@@ -106,6 +106,9 @@ model User {
   commissionsGenerated ReferralCommission[]  @relation("CommissionsGenerated")
   stakePositions       StakePosition[]
   launchpadCommitments LaunchpadCommitment[]
+  nftsOwned            Nft[]                 @relation("NftOwner")
+  nftListingsSelling   NftListing[]          @relation("NftSeller")
+  nftPurchases         NftListing[]          @relation("NftBuyer")
 
   @@index([status])
   @@index([kycStatus])
@@ -210,6 +213,7 @@ enum LedgerEntryType {
   STAKE // principal moved out to / back from a stake position (signed)
   STAKING_REWARD // yield credited on redeeming a stake
   LAUNCHPAD // sale-asset paid on commit / token received on claim (signed)
+  NFT // marketplace payment: buyer debited / seller credited (signed)
 }
 
 enum LedgerEntryStatus {
@@ -662,6 +666,61 @@ model LaunchpadCommitment {
   createdAt       DateTime  @default(now())
 
   @@unique([userId, projectId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// NFT marketplace. NFTs are unique (ownership = Nft.ownerId, not a wallet balance); only the
+// USDT payment flows through the ledger. Buying transfers ownership and debits the buyer /
+// credits the seller (minus a marketplace fee) in one transaction. See packages/core/src/nft.ts.
+// ─────────────────────────────────────────────────────────────────────────
+
+model NftCollection {
+  id          String   @id @default(cuid())
+  name        String
+  symbol      String   @unique
+  description String
+  createdAt   DateTime @default(now())
+  nfts        Nft[]
+}
+
+model Nft {
+  id           String        @id @default(cuid())
+  collectionId String
+  collection   NftCollection @relation(fields: [collectionId], references: [id])
+  tokenId      Int
+  name         String
+  imageSeed    String // deterministic seed → generated SVG art (no external assets)
+  ownerId      String
+  owner        User          @relation("NftOwner", fields: [ownerId], references: [id])
+  createdAt    DateTime      @default(now())
+  listings     NftListing[]
+
+  @@unique([collectionId, tokenId])
+  @@index([ownerId])
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+}
+
+model NftListing {
+  id       String  @id @default(cuid())
+  nftId    String
+  nft      Nft     @relation(fields: [nftId], references: [id])
+  sellerId String
+  seller   User    @relation("NftSeller", fields: [sellerId], references: [id])
+  buyerId  String?
+  buyer    User?   @relation("NftBuyer", fields: [buyerId], references: [id])
+
+  price  Decimal       @db.Decimal(36, 18) // in USDT
+  status ListingStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  soldAt    DateTime?
+
+  @@index([status, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

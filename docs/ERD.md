@@ -102,6 +102,12 @@ price, allocation, min/max, window, status) and a user's additive commitment. Co
 the sale asset (`LAUNCHPAD`) and allocates tokens; claiming (once DISTRIBUTED) credits the token
 asset (`LAUNCHPAD`). See `packages/core/src/launchpad.ts`.
 
+**NftCollection** → **Nft** → **NftListing** — a collection, its unique tokens (ownership =
+`Nft.ownerId`, plus an `imageSeed` for deterministic generated SVG art), and marketplace listings
+(`ListingStatus` ACTIVE/SOLD/CANCELLED). Buying settles the USDT payment via two `NFT` ledger
+entries (buyer debit / seller credit net of the 2% fee) and transfers ownership in one
+transaction — see `packages/core/src/nft.ts`. NFTs themselves are not wallet balances.
+
 **Notification** — in-app user notifications (`NotificationType`: DEPOSIT/WITHDRAWAL/TRADE/
 LIQUIDATION/REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), written by the core money functions
 (in-tx, via `packages/core/src/notifications.ts`) and the app/service layers (post-tx). `read`
