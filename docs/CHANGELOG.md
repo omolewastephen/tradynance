@@ -3,6 +3,17 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 11a: Rate limiting
+- **Auth surface**: enabled better-auth's built-in rate limiter (`enabled: true` — on in dev too),
+  100 req/60s/IP baseline with stricter custom rules: sign-in 5/60s, sign-up 5/300s,
+  forget/reset-password 3–5/300s, TOTP + backup-code verify 5/60s. Guards `/api/auth/*` against
+  brute force. Memory storage suits the single node; documented database/Redis for multi-instance.
+- **Sensitive server actions**: `web/src/lib/rate-limit.ts` — a dependency-free in-process
+  sliding-window limiter (with periodic sweep + client-IP helper), applied to `requestWithdrawal`
+  (5/min/user), `confirmWithdrawal` (8 per 5 min — the OTP/TOTP brute-force surface), and
+  `submitOrder` (40/10s burst). Interface is swap-ready for a shared Redis store when scaling out.
+- **Verified**: 6 rapid `/api/auth/sign-in/email` POSTs → attempts 1–5 `401`, 6th+ `429`.
+
 ## 2026-07-12 — Phase 10f: NFT marketplace
 - **`packages/core/src/nft.ts`** — list / cancel / buy. NFTs are unique (ownership is `Nft.ownerId`,
   not a wallet balance), so only the USDT payment touches the ledger: `buyNft` in ONE transaction

@@ -204,7 +204,11 @@
       "Bash(echo \"web tsc exit=$?\")",
       "Bash(node_modules/.bin/tsx packages/core/scripts/launchpad-test.ts)",
       "Bash(echo \"tsc exit=$?\")",
-      "Bash(node_modules/.bin/tsx packages/core/scripts/nft-test.ts)"
+      "Bash(node_modules/.bin/tsx packages/core/scripts/nft-test.ts)",
+      "Bash(curl -sf -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(nohup npm run dev)",
+      "Bash(disown)",
+      "Bash(echo \"pid $!\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

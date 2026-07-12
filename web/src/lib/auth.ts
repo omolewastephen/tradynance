@@ -120,6 +120,23 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // refresh once per day of activity
   },
+
+  // Brute-force protection on the auth surface. `enabled: true` forces it on in dev too (it's
+  // production-only by default). Memory storage suits the single-node deployment; switch to
+  // "database" or a secondary (Redis) store for multi-instance — see Phase 11 notes.
+  rateLimit: {
+    enabled: true,
+    window: 60, // default: 100 requests / 60s / IP across auth endpoints
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 }, // password guessing
+      "/sign-up/email": { window: 300, max: 5 }, // signup abuse
+      "/forget-password": { window: 300, max: 3 }, // reset spam
+      "/reset-password": { window: 300, max: 5 },
+      "/two-factor/verify-totp": { window: 60, max: 5 }, // TOTP guessing
+      "/two-factor/verify-backup-code": { window: 300, max: 5 },
+    },
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;

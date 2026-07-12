@@ -13,6 +13,7 @@ import {
 } from "@tradynance/core";
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export type SubmitOrderInput = {
   marketSymbol: string;
@@ -25,6 +26,11 @@ export type SubmitOrderInput = {
 
 export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderResult> {
   const session = await requireUser();
+
+  // Burst protection — generous, since active trading is legitimately frequent.
+  const limited = enforceRateLimit("order:place", session.user.id, 40, 10_000);
+  if (!limited.ok) return { ok: false, error: limited.error };
+
   const takerFeeBpsOverride = await effectiveTakerBpsForUser(
     prisma as PrismaClient,
     session.user.id,
