@@ -208,13 +208,17 @@
       "Bash(curl -sf -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)",
       "Bash(nohup npm run dev)",
       "Bash(disown)",
-      "Bash(echo \"pid $!\")"
+      "Bash(echo \"pid $!\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(mv /Users/user/Desktop/tradynance/web/src/instrumentation.ts /tmp/instrumentation.ts.bak *)",
+      "Bash(echo \"tsc=$?\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",
       "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/markets",
       "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/trade",
-      "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/admin/users"
+      "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/admin/users",
+      "/tmp"
     ]
   }
 }

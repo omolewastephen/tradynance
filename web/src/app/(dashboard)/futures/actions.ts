@@ -13,13 +13,15 @@ import {
 } from "@tradynance/core";
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { captureException } from "@/lib/observability";
 
 /** Best-effort: turn futures taker fees into a referrer rebate (idempotent, non-critical). */
 async function settleReferral(userId: string) {
   try {
     await settleReferralCommissionsForUser(prisma as PrismaClient, userId);
-  } catch {
-    /* never fail a trade over commission settlement */
+  } catch (e) {
+    // Never fail a trade over commission settlement — but surface it instead of swallowing.
+    captureException(e, { where: "settleReferralCommissions", userId });
   }
 }
 

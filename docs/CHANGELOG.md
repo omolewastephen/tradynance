@@ -3,6 +3,25 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 11c: Monitoring (Sentry)
+- **Error monitoring via `@sentry/nextjs`, fully env-gated** — inert (no network, no overhead)
+  until `SENTRY_DSN` is set, so dev and DSN-less deploys are unaffected. Server errors init +
+  capture in `src/instrumentation.ts` (`register` → `sentry.server.config.ts`, plus
+  `onRequestError` for route handlers / RSC / server actions); `src/lib/observability.ts` gives
+  app code a `captureException` / `captureMessage` seam (always logs, forwards to Sentry); a
+  top-level `app/global-error.tsx` boundary reports client crashes.
+- **Kept the bundle lean** — the naive wiring added ~82 kB to *every* page's First Load JS and
+  tripled the middleware bundle (Sentry leaking into the client + edge runtimes). Fixed by: (1)
+  no always-on client SDK — the error boundary imports Sentry **lazily** (a chunk loaded only on a
+  crash), and (2) a positive `NEXT_RUNTIME === "nodejs"` guard so Sentry is dead-code-eliminated
+  from the edge/middleware bundle. Result: First Load JS **103 kB** (unchanged) and middleware
+  **33 kB** (unchanged from baseline), vs 184 kB / 116 kB with the naive wiring.
+- Wired `captureException` into the previously-silent best-effort referral-settlement catches
+  (spot + futures) so swallowed errors surface. `.env.example` documents `SENTRY_DSN` /
+  `NEXT_PUBLIC_SENTRY_DSN` (+ a `REDIS_URL` note for multi-instance rate limiting).
+- **Verified**: full production build green; app boots with instrumentation compiled and Sentry
+  inert (no DSN); `/login` 200, no errors.
+
 ## 2026-07-12 — Phase 11b: Audit trail completeness
 - **Shared audit helper** `web/src/lib/audit.ts` — `recordAudit({ actorId, action, entityType,
   entityId, metadata })` writes the append-only `AuditLog` and **captures the actor's IP** from

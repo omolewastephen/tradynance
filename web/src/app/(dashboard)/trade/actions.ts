@@ -14,6 +14,7 @@ import {
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { captureException } from "@/lib/observability";
 
 export type SubmitOrderInput = {
   marketSymbol: string;
@@ -63,8 +64,9 @@ export async function submitOrder(input: SubmitOrderInput): Promise<PlaceOrderRe
     // Best-effort: turn any fees this order charged into a referrer rebate (idempotent).
     try {
       await settleReferralCommissionsForUser(prisma as PrismaClient, session.user.id);
-    } catch {
-      /* commission settlement is non-critical; never fail the trade over it */
+    } catch (e) {
+      // Non-critical, so never fail the trade over it — but surface it instead of swallowing.
+      captureException(e, { where: "settleReferralCommissions", userId: session.user.id });
     }
     revalidatePath(`/trade/${input.marketSymbol}`);
     revalidatePath("/wallet");
