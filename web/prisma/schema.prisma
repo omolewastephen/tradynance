@@ -109,6 +109,7 @@ model User {
   nftsOwned            Nft[]                 @relation("NftOwner")
   nftListingsSelling   NftListing[]          @relation("NftSeller")
   nftPurchases         NftListing[]          @relation("NftBuyer")
+  posts                Post[]
 
   @@index([status])
   @@index([kycStatus])
@@ -756,6 +757,60 @@ model Notification {
 
   @@index([userId, read, createdAt])
   @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Marketing site CMS — admin-managed public content (blog, contact inbox, editable copy).
+// ─────────────────────────────────────────────────────────────────────────
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Post {
+  id        String     @id @default(cuid())
+  title     String
+  slug      String     @unique
+  excerpt   String
+  content   String // markdown body
+  coverSeed String // deterministic generated cover art (see nft-art)
+  category  String?
+  status    PostStatus @default(DRAFT)
+  authorId  String?
+  author    User?      @relation(fields: [authorId], references: [id])
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+// Editable marketing copy, keyed like "home.hero.title". Pages fall back to code defaults when a
+// key isn't overridden, so the site works before anything is edited in admin. See lib/site-content.
+model SiteContent {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────────────────────────────────────

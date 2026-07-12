@@ -225,14 +225,17 @@
       "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"SELECT a.symbol, an.network FROM \\\\\"AssetNetwork\\\\\" an JOIN \\\\\"Asset\\\\\" a ON a.id=an.\\\\\"assetId\\\\\" WHERE a.symbol='ETH';\")",
       "Bash(curl -s -o /tmp/signin.json -w \"%{http_code}\" -X POST http://localhost:3000/api/auth/sign-in/email -H \"Content-Type: application/json\" -d '{\"email\":\"trader1@example.com\",\"password\":\"Password123\"}')",
       "Bash(node web3-e2e.js)",
-      "Bash(curl -s -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)"
+      "Bash(curl -s -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(rm src/app/page.tsx && mkdir -p \"src/app/\\(marketing\\)/about\" \"src/app/\\(marketing\\)/contact\" \"src/app/\\(marketing\\)/blog/[slug]\" && echo \"scaffolded\")",
+      "Bash(node -e \"let f=require\\('fs'\\);let p='prisma/seed.ts';let s=f.readFileSync\\(p,'utf8'\\);if\\(!s.includes\\('seedCms'\\)\\){s=s.replace\\('import { seedNft } from \\\\\"./seed-nft\\\\\";','import { seedNft } from \\\\\"./seed-nft\\\\\";\\\\nimport { seedCms } from \\\\\"./seed-cms\\\\\";'\\);s=s.replace\\('await seedNft\\(\\);','await seedNft\\(\\);\\\\n await seedCms\\(\\);'\\);f.writeFileSync\\(p,s\\);console.log\\('wired'\\);}else console.log\\('already'\\);\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",
       "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/markets",
       "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/trade",
       "/Users/user/Desktop/tradynance/web/src/app/(dashboard)/admin/users",
-      "/tmp"
+      "/tmp",
+      "/Users/user/Desktop/tradynance/web/src/app/(marketing)/blog"
     ]
   }
 }
