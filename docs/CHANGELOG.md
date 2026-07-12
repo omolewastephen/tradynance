@@ -3,6 +3,22 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 11d: CI/CD (GitHub Actions)
+- **`.github/workflows/ci.yml`** — on push to master + every PR: spins a Postgres 16 service,
+  `npm ci`, `prisma generate` + `migrate deploy`, seeds, then runs **typecheck → lint → core money
+  tests → web build**. Concurrency-cancels superseded runs.
+- **Made the suite CI-runnable** — two obstacles solved: (1) `futures`/`convert` tests need a mark
+  price (normally from the live market-data service) → new create-only **`seed-tickers.ts`** gives
+  every market a static fallback price (also benefits local dev: prices before market-data's first
+  poll; wired into the main seed); (2) the market-maker's resting liquidity crosses the trading
+  test's own orders → **`seed-ci.ts`** seeds assets + markets + tickers only (no market-maker, no
+  demo data — each test makes its own).
+- **Root scripts**: `typecheck` (web + core + all four services), `lint`, `test:core`
+  (`scripts/test-core.sh` runs all 9 suites, fails on any), `db:seed:ci`.
+- **Verified locally** (each CI step): `npm ci`, prisma generate/migrate, `db:seed:ci`,
+  `typecheck` (exit 0 across 6 workspaces), `lint` (exit 0), `test:core` (**9/9 suites**), `build`
+  (green). Closes Phase 11 — the platform is feature-complete through the build plan.
+
 ## 2026-07-12 — Phase 11c: Monitoring (Sentry)
 - **Error monitoring via `@sentry/nextjs`, fully env-gated** — inert (no network, no overhead)
   until `SENTRY_DSN` is set, so dev and DSN-less deploys are unaffected. Server errors init +

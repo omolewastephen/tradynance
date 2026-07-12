@@ -211,7 +211,9 @@
       "Bash(echo \"pid $!\")",
       "Bash(echo \"EXIT=$?\")",
       "Bash(mv /Users/user/Desktop/tradynance/web/src/instrumentation.ts /tmp/instrumentation.ts.bak *)",
-      "Bash(echo \"tsc=$?\")"
+      "Bash(echo \"tsc=$?\")",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"typecheck exit=$?\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

@@ -2,6 +2,7 @@ import { auth } from "../src/lib/auth";
 import { prisma } from "../src/lib/prisma";
 import { seedAssets } from "./seed-assets";
 import { seedMarkets } from "./seed-markets";
+import { seedTickers } from "./seed-tickers";
 import { seedMarketMaker } from "./seed-market-maker";
 import { seedStaking } from "./seed-staking";
 import { seedLaunchpad } from "./seed-launchpad";
@@ -43,6 +44,7 @@ async function main() {
   await upsertAdmin();
   await seedAssets();
   await seedMarkets();
+  await seedTickers(); // static fallback prices; market-data overwrites with live once running
   await seedMarketMaker();
   await seedStaking();
   await seedLaunchpad();

@@ -166,7 +166,13 @@ app and the services depend on it, never the reverse. All money movement flows t
     (collection/NFT/listing, list/buy/cancel with buyer→seller USDT settlement + 2% fee,
     deterministic SVG art; `/nft`). Each: core fn + direct test (notif/referrals/vip/staking/
     launchpad/nft, all conservation-checked) + browser E2E. `services/liquidation-engine` unchanged.
-11. ⬅ **NEXT** — Hardening: rate limiting, audit trail completeness, monitoring (Sentry), CI/CD.
+11. ✅ Hardening: **rate limiting** (better-auth built-in on the auth surface + an in-process
+    sliding-window limiter on withdrawal request/confirm + order placement), **audit completeness**
+    (shared IP-capturing `recordAudit`; user security/money events now logged, not just admin),
+    **monitoring** (env-gated `@sentry/nextjs` — server `instrumentation` + `observability.ts` seam
+    + lazy client error boundary; kept First Load JS / middleware at baseline), **CI/CD**
+    (`.github/workflows/ci.yml`: Postgres service → migrate → seed-ci → typecheck/lint/test:core/
+    build; `seed-tickers.ts` + `seed-ci.ts` make the suite CI-runnable). **Build plan complete.**
 
 ## Running locally
 From the repo root:
