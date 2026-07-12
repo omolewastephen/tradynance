@@ -3,6 +3,24 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Admin: asset addresses, holdings, transactions (+ futures fix)
+- **Fixed `/futures/[symbol]`** (and any core-importing page): Phase 12b re-exported the viem chain
+  modules from the `@tradynance/core` barrel, so viem→`ox`'s dynamic require ("Critical dependency:
+  the request of a dependency is an expression") leaked into those route bundles and errored before
+  load. Moved chain code to a `@tradynance/core/chain` subpath (package `exports` map); the barrel
+  no longer pulls in viem. Futures now compiles with zero warnings and renders.
+- **Admin asset addresses** — new `AssetNetwork.depositAddress`/`depositMemo` (migration
+  `..._asset_deposit_address`) + `/admin/assets`: per coin/network, an admin sets the **platform
+  deposit address** (+ memo, min deposit, withdrawal fee, requires-memo, active). When set, the
+  user deposit page shows THAT address instead of the per-user derived one (shared-custodial model).
+  Verified end-to-end: an admin-set address appears on the user's deposit page.
+- **Admin holdings** — `/admin/holdings`: platform total custody + per-asset totals (holders, USD)
+  and a table of **every user's balances** (balance / available / USD value, linked to the user).
+- **Admin transactions** — `/admin/transactions`: the full append-only **ledger** across the
+  platform, paginated, filterable by user email + entry type, with signed/coloured amounts and
+  running balance. Per-user "View all transactions" link added to the user detail page.
+- Wired Holdings / Transactions / Assets into the admin nav; RBAC-gated + audit-logged.
+
 ## 2026-07-12 — Phase 13: Design uplift + marketing site + CMS
 - **Design system v2 "Onyx & Emerald"** (13a): overhauled the CSS-variable palette to a premium
   dark-exchange look — onyx surfaces (#0A0B0E/#13151C), deepened emerald (#12D07A), electric-blue

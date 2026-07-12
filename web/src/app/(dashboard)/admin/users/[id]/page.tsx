@@ -118,8 +118,14 @@ export default async function AdminUserDetailPage({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Recent ledger</CardTitle>
+          <a
+            href={`/admin/transactions?q=${encodeURIComponent(user.email)}`}
+            className="text-xs text-accent hover:underline"
+          >
+            View all transactions →
+          </a>
         </CardHeader>
         <CardContent>
           {user.ledgerEntries.length === 0 ? (

@@ -155,6 +155,11 @@ model AssetNetwork {
   withdrawalFee   Decimal @db.Decimal(36, 18)
   requiresMemo    Boolean @default(false)
   contractAddress String?
+  // Platform receiving address for this coin/network, set by an admin in /admin/assets. When
+  // present, the user deposit page shows THIS address (shared custodial model) instead of the
+  // per-user HD-derived one. Set via admin, crediting is manual/reconciled.
+  depositAddress  String?
+  depositMemo     String?
   isActive        Boolean @default(true)
 
   @@unique([assetId, network])

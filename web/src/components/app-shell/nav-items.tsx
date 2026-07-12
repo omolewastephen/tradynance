@@ -22,6 +22,9 @@ import {
   Newspaper,
   Inbox,
   FileText,
+  Boxes,
+  Layers,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,6 +55,9 @@ export const adminSection: NavSection = {
   items: [
     { href: "/admin", label: "Dashboard", icon: LayoutGrid },
     { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/holdings", label: "Holdings", icon: Layers },
+    { href: "/admin/transactions", label: "Transactions", icon: Receipt },
+    { href: "/admin/assets", label: "Assets", icon: Boxes },
     { href: "/admin/kyc", label: "KYC review", icon: ShieldQuestion },
     { href: "/admin/deposits", label: "Deposits", icon: Landmark },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Banknote },

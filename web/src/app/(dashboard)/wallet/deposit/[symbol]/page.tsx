@@ -36,8 +36,13 @@ export default async function DepositPage({
 
   const wallet = await getOrCreateWallet(session.user.id, asset.id, selected.network);
 
-  const qrDataUrl = wallet.depositAddress
-    ? await QRCode.toDataURL(wallet.depositAddress, { margin: 1, width: 220 })
+  // An admin-set platform address (from /admin/assets) takes precedence over the per-user
+  // derived address — the shared-custodial model. Falls back to the derived address when unset.
+  const depositAddress = selected.depositAddress ?? wallet.depositAddress;
+  const depositMemo = selected.depositMemo; // admin-set memo/tag for the platform address
+
+  const qrDataUrl = depositAddress
+    ? await QRCode.toDataURL(depositAddress, { margin: 1, width: 220 })
     : null;
 
   const recentDeposits = await prisma.deposit.findMany({
@@ -90,7 +95,7 @@ export default async function DepositPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          {wallet.depositAddress ? (
+          {depositAddress ? (
             <>
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
                 {qrDataUrl && (
@@ -106,9 +111,17 @@ export default async function DepositPage({
                     Address
                   </span>
                   <code className="break-all rounded-sm border border-border-subtle bg-surface-raised px-3 py-2 font-mono text-sm">
-                    {wallet.depositAddress}
+                    {depositAddress}
                   </code>
-                  <CopyAddress value={wallet.depositAddress} />
+                  <CopyAddress value={depositAddress} />
+                  {depositMemo && (
+                    <div className="mt-1 flex flex-col gap-1">
+                      <span className="text-micro uppercase tracking-wide text-foreground-muted">Memo / tag</span>
+                      <code className="break-all rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 font-mono text-sm text-warning">
+                        {depositMemo}
+                      </code>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -136,7 +149,7 @@ export default async function DepositPage({
               </p>
 
               {WEB3_PAY_NETWORKS.has(selected.network) && (
-                <PayWithWalletLoader depositAddress={wallet.depositAddress} symbol={asset.symbol} />
+                <PayWithWalletLoader depositAddress={depositAddress} symbol={asset.symbol} />
               )}
             </>
           ) : (
