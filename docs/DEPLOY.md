@@ -23,6 +23,38 @@ curl -f http://localhost:3000/api/health   # {"status":"ok","db":"up"}
 ```
 Put a TLS-terminating reverse proxy (Caddy / nginx / Traefik) in front of `web:3000` for HTTPS.
 
+## Managed platforms
+
+Both run always-on processes (unlike Vercel/Netlify, which can't host the background services).
+
+### Render (one-file blueprint — `render.yaml`)
+`render.yaml` provisions **everything**: Postgres 16, Redis, the web service, and the five worker
+services (market-data, market-maker, liquidation-engine, sweeper, chain-watcher).
+1. Render → **New → Blueprint** → pick this repo. It reads `render.yaml`.
+2. Fill the prompted secrets (`sync: false`): `HD_WALLET_MNEMONIC`, and — **critically** —
+   `NEXT_PUBLIC_APP_URL` + `BETTER_AUTH_URL` = the web service's final origin (its `onrender.com`
+   URL or your custom domain, with `https://`). A mismatch here breaks login (CSP).
+3. First deploy runs migrations (`preDeployCommand`). Then open a **Shell** on `tradynance-web`
+   and run `npm run db:seed` **once** (creates `admin@tradynance.local / ChangeMe123!` + the
+   asset/market catalog — change the password). Web + workers need paid plans to stay always-on.
+
+### Railway (`railway.json` + a few dashboard steps)
+Railway is per-service, so the web service uses `railway.json` (build + migrate-on-start +
+`/api/health`) and you add the workers alongside it:
+1. **New Project → Deploy from repo.** The first service picks up `railway.json` → that's **web**.
+2. Add plugins: **PostgreSQL** and **Redis**.
+3. On **web**, set variables: `DATABASE_URL=${{Postgres.DATABASE_URL}}`,
+   `REDIS_URL=${{Redis.REDIS_URL}}`, `BETTER_AUTH_SECRET` (generate), and
+   `NEXT_PUBLIC_APP_URL` + `BETTER_AUTH_URL` = the web service's public domain. Add the rest from
+   `.env.docker.example`. Enable a public domain for web.
+4. Add **5 more services** from the same repo (one per worker). For each, in Settings set:
+   - **Build:** `npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma`
+   - **Start:** `npx tsx services/<name>/src/index.ts`  (market-data / market-maker /
+     liquidation-engine / sweeper / chain-watcher)
+   - Share the same variables (`DATABASE_URL`, `HD_WALLET_MNEMONIC`, RPC URLs, …) — a shared
+     variable group is easiest.
+5. Run `npm run db:seed` **once** (Railway shell) after the first successful web deploy.
+
 ## Environment (the parts that matter)
 - **`BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` must EXACTLY match the public origin** (scheme +
   host + port) the browser loads — e.g. `https://app.example.com`. The auth client calls this

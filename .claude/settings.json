@@ -256,7 +256,14 @@
       "Bash(pkill -f \"standalone/web/server.js\")",
       "Bash(PORT=3000 HOSTNAME=127.0.0.1 nohup node --env-file=/Users/user/Desktop/tradynance/web/.env server.js)",
       "Bash(curl -s -o /dev/null http://127.0.0.1:3000/api/health)",
-      "Bash(node /private/tmp/claude-501/-Users-user-Desktop-tradynance/985d359f-a0b0-4e26-8fe0-3a91d786a923/scratchpad/pw-check/prod-login-lh.js)"
+      "Bash(node /private/tmp/claude-501/-Users-user-Desktop-tradynance/985d359f-a0b0-4e26-8fe0-3a91d786a923/scratchpad/pw-check/prod-login-lh.js)",
+      "Bash(PORT=3055 nohup node --env-file=web/.env web/.next/standalone/web/server.js)",
+      "Bash(curl -s -o /dev/null http://127.0.0.1:3055/api/health)",
+      "Bash(curl -s http://127.0.0.1:3055/api/health)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('railway.json','utf8'\\)\\); console.log\\('valid JSON'\\)\")",
+      "Bash(python3 -c \"import yaml,sys; d=yaml.safe_load\\(open\\('render.yaml'\\)\\); print\\('valid YAML —', len\\(d['services']\\), 'services,', len\\(d['databases']\\), 'db,', len\\(d['envVarGroups']\\), 'env group'\\)\")",
+      "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('render.yaml','utf8'\\); console.log\\('yaml \\(python unavailable\\); lines:', s.split\\('\\\\n'\\).length\\)\")",
+      "Bash(node -e \"let y; try{y=require\\('yaml'\\)}catch\\(e\\){try{y=require\\('js-yaml'\\)}catch\\(e2\\){console.log\\('no yaml lib'\\);process.exit\\(0\\)}}; const s=require\\('fs'\\).readFileSync\\('render.yaml','utf8'\\); const d=\\(y.parse||y.load\\)\\(s\\); console.log\\('valid YAML —', d.services.length,'services,', d.databases.length,'db,', d.envVarGroups.length,'env group\\(s\\)'\\)\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

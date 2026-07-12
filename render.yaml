@@ -1,0 +1,133 @@
+# Render blueprint — provisions the whole Tradynance stack (Postgres + Redis + web + 5 workers).
+# In Render: New → Blueprint → point at this repo. Fill the `sync: false` secrets when prompted,
+# then after the first deploy open a Shell on `tradynance-web` and run `npm run db:seed` ONCE
+# (creates admin@tradynance.local / ChangeMe123! + the asset/market catalog — change the password).
+# See docs/DEPLOY.md. NOTE: workers + a paid web plan are required for always-on processes.
+
+databases:
+  - name: tradynance-db
+    databaseName: tradynance
+    postgresMajorVersion: "16"
+    plan: basic-256mb
+
+services:
+  - type: keyvalue
+    name: tradynance-redis
+    plan: starter
+    ipAllowList: [] # internal-only
+
+  - type: web
+    name: tradynance-web
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma && npm run build
+    preDeployCommand: npm run db:migrate
+    startCommand: npm run start:web
+    healthCheckPath: /api/health
+    envVars:
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        fromDatabase: { name: tradynance-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: tradynance-redis, property: connectionString }
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      # MUST equal the final public origin (custom domain or the onrender.com URL). CSP-critical.
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: BETTER_AUTH_URL
+        sync: false
+      - fromGroup: tradynance-shared
+
+  - type: worker
+    name: tradynance-market-data
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma
+    startCommand: npx tsx services/market-data/src/index.ts
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: tradynance-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: tradynance-redis, property: connectionString }
+      - fromGroup: tradynance-shared
+
+  - type: worker
+    name: tradynance-market-maker
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma
+    startCommand: npx tsx services/market-maker/src/index.ts
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: tradynance-db, property: connectionString }
+      - fromGroup: tradynance-shared
+
+  - type: worker
+    name: tradynance-liquidation-engine
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma
+    startCommand: npx tsx services/liquidation-engine/src/index.ts
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: tradynance-db, property: connectionString }
+      - fromGroup: tradynance-shared
+
+  - type: worker
+    name: tradynance-sweeper
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma
+    startCommand: npx tsx services/sweeper/src/index.ts
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: tradynance-db, property: connectionString }
+      - fromGroup: tradynance-shared
+
+  - type: worker
+    name: tradynance-chain-watcher
+    runtime: node
+    plan: starter
+    buildCommand: npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma
+    startCommand: npx tsx services/chain-watcher/src/index.ts
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: tradynance-db, property: connectionString }
+      - fromGroup: tradynance-shared
+
+envVarGroups:
+  - name: tradynance-shared
+    envVars:
+      # Custody hot wallet — set from a real secret in production (never testnet mnemonic for real funds).
+      - key: HD_WALLET_MNEMONIC
+        sync: false
+      - key: TREASURY_ACCOUNT_INDEX
+        value: "1"
+      # Chains
+      - key: ETH_SEPOLIA_RPC_URL
+        value: https://ethereum-sepolia-rpc.publicnode.com
+      - key: BTC_TESTNET_ESPLORA_URL
+        value: https://blockstream.info/testnet/api
+      - key: DEPOSIT_MIN_CONFIRMATIONS_BTC
+        value: "1"
+      - key: DEPOSIT_MIN_CONFIRMATIONS_ETH
+        value: "3"
+      # Market data
+      - key: MARKET_DATA_API_URL
+        value: https://data-api.binance.vision
+      - key: MARKET_DATA_POLL_MS
+        value: "10000"
+      # Email (optional — blank logs to console)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: Tradynance <onboarding@resend.dev>
+      # Monitoring + WalletConnect (optional)
+      - key: SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+        sync: false

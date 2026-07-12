@@ -13,6 +13,9 @@ skimmable running record — see `git log` for full diffs.
   HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
   `Permissions-Policy`. `output: "standalone"` + `outputFileTracingRoot` for a minimal image.
 - **`/api/health`** — DB-ping liveness/readiness probe (used by the compose healthcheck).
+- **One-click managed hosting**: a **Render blueprint** (`render.yaml` — provisions Postgres + Redis
+  + web + all 5 worker services in one file) and a **Railway** config (`railway.json` + a documented
+  multi-service setup in DEPLOY.md). Both run the always-on services (unlike Vercel/Netlify).
 - **Non-Docker path too** (Docker is optional): `npm run build` (`scripts/build-standalone.sh` —
   standalone output + static/public copied in), `npm run start:web`, and a **PM2**
   `ecosystem.config.cjs` (dependency-free `.env` loader) running web + all five services; systemd
