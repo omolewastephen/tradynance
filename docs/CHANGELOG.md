@@ -3,6 +3,22 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Deployability: Docker, security headers, health check
+- **Dockerised the whole stack**: multi-stage `Dockerfile` (a lean Next.js **standalone** web
+  runner + a full-workspace image that runs any service via tsx) and `docker-compose.yml`
+  (postgres + redis + a one-shot **migrate/seed** job + web + all five services), `.dockerignore`,
+  `.env.docker.example`. `docs/DEPLOY.md` is the runbook. CI now **builds both Docker targets** to
+  validate the images.
+- **Production security headers** (`web/next.config.ts`): a Next-App-Router-compatible **CSP** plus
+  HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+  `Permissions-Policy`. `output: "standalone"` + `outputFileTracingRoot` for a minimal image.
+- **`/api/health`** — DB-ping liveness/readiness probe (used by the compose healthcheck).
+- **Verified** by running the real production **standalone server**: `/api/health` → `db: up`, all
+  six security headers present, home/login 200, and a full **browser login → dashboard with the CSP
+  active and zero console errors**. Surfaced the key deploy gotcha (now documented): the CSP's
+  `connect-src 'self'` requires `BETTER_AUTH_URL`/`NEXT_PUBLIC_APP_URL` to **exactly match the
+  serving origin** — a host/port mismatch blocks the auth client.
+
 ## 2026-07-12 — Deposit sweeper + hot-wallet collision fix
 - **Fixed a real custody bug**: the withdrawal hot wallet derived at addressIndex 0, which
   **collided with the first user's deposit address** (deposit indexes also start at 0). The

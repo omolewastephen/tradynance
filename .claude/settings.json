@@ -242,7 +242,21 @@
       "Bash(echo \"core=$?\")",
       "Bash(node_modules/.bin/tsx --env-file=web/.env packages/core/scripts/sweep-check.ts)",
       "Bash(pkill -f \"market-maker\\\\|market-data\\\\|liquidation\\\\|sweeper\")",
-      "Bash(node -e \"let f=require\\('fs'\\);let p='CLAUDE.md';let s=f.readFileSync\\(p,'utf8'\\);if\\(!s.includes\\('sweeper/'\\)\\){s=s.replace\\('  liquidation-engine/    standalone risk service \\(marks futures positions, liquidates + funding\\)','  liquidation-engine/    standalone risk service \\(marks futures positions, liquidates + funding\\)\\\\n  sweeper/               standalone custody service \\(sweeps deposits into the treasury/hot wallet\\)'\\);f.writeFileSync\\(p,s\\);console.log\\('CLAUDE updated'\\);}else console.log\\('already'\\);\")"
+      "Bash(node -e \"let f=require\\('fs'\\);let p='CLAUDE.md';let s=f.readFileSync\\(p,'utf8'\\);if\\(!s.includes\\('sweeper/'\\)\\){s=s.replace\\('  liquidation-engine/    standalone risk service \\(marks futures positions, liquidates + funding\\)','  liquidation-engine/    standalone risk service \\(marks futures positions, liquidates + funding\\)\\\\n  sweeper/               standalone custody service \\(sweeps deposits into the treasury/hot wallet\\)'\\);f.writeFileSync\\(p,s\\);console.log\\('CLAUDE updated'\\);}else console.log\\('already'\\);\")",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(cp -r .next/static .next/standalone/web/.next/static)",
+      "Bash(cp -r public .next/standalone/web/public)",
+      "Bash(PORT=3002 HOSTNAME=127.0.0.1 nohup node --env-file=/Users/user/Desktop/tradynance/web/.env server.js)",
+      "Bash(curl -s -o /dev/null http://127.0.0.1:3002/api/health)",
+      "Bash(curl -s http://127.0.0.1:3002/api/health)",
+      "Bash(curl -s -D - -o /dev/null http://127.0.0.1:3002/login)",
+      "Bash(curl -s -o /dev/null -w \"home=%{http_code} login=\" http://127.0.0.1:3002/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:3002/login)",
+      "Bash(pkill -f \"standalone/web/server.js\")",
+      "Bash(PORT=3000 HOSTNAME=127.0.0.1 nohup node --env-file=/Users/user/Desktop/tradynance/web/.env server.js)",
+      "Bash(curl -s -o /dev/null http://127.0.0.1:3000/api/health)",
+      "Bash(node /private/tmp/claude-501/-Users-user-Desktop-tradynance/985d359f-a0b0-4e26-8fe0-3a91d786a923/scratchpad/pw-check/prod-login-lh.js)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

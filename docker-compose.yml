@@ -1,0 +1,92 @@
+# Tradynance — full stack. Copy .env.docker.example → .env, fill it in, then:
+#   docker compose up --build -d
+# The `migrate` one-shot applies migrations + seeds before web/services start. See docs/DEPLOY.md.
+name: tradynance
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: services
+  env_file: .env
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tradynance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-tradynance}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tradynance}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+  # One-shot: apply migrations + seed, then exit. Everything else waits for this to finish.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: services
+    command: sh -c "npx prisma migrate deploy --schema web/prisma/schema.prisma && npm run db:seed"
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    env_file: .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  market-data:
+    <<: *app
+    command: npx tsx services/market-data/src/index.ts
+
+  market-maker:
+    <<: *app
+    command: npx tsx services/market-maker/src/index.ts
+
+  liquidation-engine:
+    <<: *app
+    command: npx tsx services/liquidation-engine/src/index.ts
+
+  sweeper:
+    <<: *app
+    command: npx tsx services/sweeper/src/index.ts
+
+  chain-watcher:
+    <<: *app
+    command: npx tsx services/chain-watcher/src/index.ts
+
+volumes:
+  pgdata:
+  redisdata:
