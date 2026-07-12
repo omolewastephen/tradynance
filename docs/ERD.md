@@ -97,6 +97,11 @@ and a user's stake in it. Principal moves out of the SPOT wallet on stake (`STAK
 on redeem (`STAKE` credit) with earned yield (`STAKING_REWARD` credit); rewards accrue continuously
 and are computed on demand from elapsed time (`packages/core/src/staking.ts`) — no accrual table.
 
+**LaunchpadProject** → **LaunchpadCommitment** — a token sale (its own token Asset, sale asset,
+price, allocation, min/max, window, status) and a user's additive commitment. Committing debits
+the sale asset (`LAUNCHPAD`) and allocates tokens; claiming (once DISTRIBUTED) credits the token
+asset (`LAUNCHPAD`). See `packages/core/src/launchpad.ts`.
+
 **Notification** — in-app user notifications (`NotificationType`: DEPOSIT/WITHDRAWAL/TRADE/
 LIQUIDATION/REFERRAL/STAKING/LAUNCHPAD/SECURITY/SYSTEM), written by the core money functions
 (in-tx, via `packages/core/src/notifications.ts`) and the app/service layers (post-tx). `read`

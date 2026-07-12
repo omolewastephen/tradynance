@@ -102,9 +102,10 @@ model User {
   futuresPositions FuturesPosition[]
   notifications    Notification[]
 
-  commissionsEarned    ReferralCommission[] @relation("CommissionsEarned")
-  commissionsGenerated ReferralCommission[] @relation("CommissionsGenerated")
+  commissionsEarned    ReferralCommission[]  @relation("CommissionsEarned")
+  commissionsGenerated ReferralCommission[]  @relation("CommissionsGenerated")
   stakePositions       StakePosition[]
+  launchpadCommitments LaunchpadCommitment[]
 
   @@index([status])
   @@index([kycStatus])
@@ -137,6 +138,8 @@ model Asset {
   referralCommissions ReferralCommission[]
   stakingProducts     StakingProduct[]
   stakePositions      StakePosition[]
+  launchpadTokens     LaunchpadProject[]   @relation("LaunchpadToken")
+  launchpadSales      LaunchpadProject[]   @relation("LaunchpadSale")
 }
 
 model AssetNetwork {
@@ -206,6 +209,7 @@ enum LedgerEntryType {
   REFERRAL_COMMISSION // rebate credited to a referrer from a referee's trading fee
   STAKE // principal moved out to / back from a stake position (signed)
   STAKING_REWARD // yield credited on redeeming a stake
+  LAUNCHPAD // sale-asset paid on commit / token received on claim (signed)
 }
 
 enum LedgerEntryStatus {
@@ -605,6 +609,59 @@ model StakePosition {
   redeemedAt DateTime?
 
   @@index([userId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Launchpad — token sales. Committing debits the sale asset (USDT) from the SPOT wallet and
+// allocates tokens; claiming (after the sale is distributed) credits the token asset. Both are
+// LAUNCHPAD ledger entries. See packages/core/src/launchpad.ts.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum LaunchpadStatus {
+  UPCOMING
+  LIVE
+  ENDED
+  DISTRIBUTED
+}
+
+model LaunchpadProject {
+  id           String @id @default(cuid())
+  name         String
+  tokenSymbol  String
+  tokenAssetId String
+  tokenAsset   Asset  @relation("LaunchpadToken", fields: [tokenAssetId], references: [id])
+  saleAssetId  String
+  saleAsset    Asset  @relation("LaunchpadSale", fields: [saleAssetId], references: [id])
+
+  tokenPrice      Decimal @db.Decimal(36, 18) // sale asset per token
+  totalAllocation Decimal @db.Decimal(36, 18) // tokens for sale
+  soldAllocation  Decimal @default(0) @db.Decimal(36, 18)
+  minCommit       Decimal @db.Decimal(36, 18) // in sale asset
+  maxCommit       Decimal @db.Decimal(36, 18) // in sale asset, per user
+
+  startAt     DateTime
+  endAt       DateTime
+  status      LaunchpadStatus @default(UPCOMING)
+  description String
+
+  createdAt   DateTime              @default(now())
+  commitments LaunchpadCommitment[]
+}
+
+model LaunchpadCommitment {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  projectId String
+  project   LaunchpadProject @relation(fields: [projectId], references: [id])
+
+  committedAmount Decimal   @db.Decimal(36, 18) // total in sale asset
+  tokenAmount     Decimal   @db.Decimal(36, 18) // total allocated tokens
+  claimed         Boolean   @default(false)
+  claimedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([userId, projectId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

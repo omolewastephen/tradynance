@@ -201,7 +201,9 @@
       "Bash(grep -E \"^FAIL\" /tmp/tt.log)",
       "Read(//Users/user/**)",
       "Bash(node_modules/.bin/tsx packages/core/scripts/staking-test.ts)",
-      "Bash(echo \"web tsc exit=$?\")"
+      "Bash(echo \"web tsc exit=$?\")",
+      "Bash(node_modules/.bin/tsx packages/core/scripts/launchpad-test.ts)",
+      "Bash(echo \"tsc exit=$?\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

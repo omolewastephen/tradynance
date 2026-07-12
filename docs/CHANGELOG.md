@@ -3,6 +3,25 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Phase 10e: Launchpad
+- **`packages/core/src/launchpad.ts`** — token sales with the usual ledger discipline.
+  `commitToLaunchpad` debits the sale asset (USDT) from the SPOT wallet (a `LAUNCHPAD` entry),
+  allocates `amount / tokenPrice` tokens, bumps `soldAllocation`, and records an additive
+  per-user commitment; `claimLaunchpad` (once the project is DISTRIBUTED) credits the token asset
+  to the SPOT wallet. Guards: min/max-per-user, remaining allocation, LIVE-only commit,
+  DISTRIBUTED-only + single claim. Proceeds/token supply are unmodeled platform sinks/sources.
+- **Schema**: `LaunchpadProject` + `LaunchpadCommitment` (+ `LaunchpadStatus`), `LAUNCHPAD`
+  ledger type (migration `20260712010258_launchpad`). 3 seeded projects (idempotent
+  `seed-launchpad.ts`), each selling its own token Asset: NovaChain (LIVE), AetherFi (UPCOMING),
+  Pulsar (DISTRIBUTED) — so the whole commit→claim flow is demoable.
+- **`/launchpad` page**: project cards with status badge, allocation progress bar, min/max, sale
+  window, your commitment/allocation, and a per-status action (commit / opens-soon / claim /
+  ended). Nav entry.
+- **Verified**: 15-assertion core test (`launchpad-test.ts`) — commit debits + allocates,
+  additive commits, min/max/allocation/insufficient/not-live rejected, claim only after
+  DISTRIBUTED credits the token once (double-claim rejected), conservation on both assets.
+  Browser: committed 500 USDT → 2,000 NOVA on the LIVE project, no console errors.
+
 ## 2026-07-12 — Phase 10d: Staking
 - **`packages/core/src/staking.ts`** — stake an asset for yield, same ledger discipline: `stake`
   debits principal from the SPOT wallet (a `STAKE` entry) and opens a `StakePosition`; `redeemStake`

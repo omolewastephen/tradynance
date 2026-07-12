@@ -4,6 +4,7 @@ import { seedAssets } from "./seed-assets";
 import { seedMarkets } from "./seed-markets";
 import { seedMarketMaker } from "./seed-market-maker";
 import { seedStaking } from "./seed-staking";
+import { seedLaunchpad } from "./seed-launchpad";
 
 async function upsertAdmin() {
   const email = "admin@tradynance.local";
@@ -43,6 +44,7 @@ async function main() {
   await seedMarkets();
   await seedMarketMaker();
   await seedStaking();
+  await seedLaunchpad();
 }
 
 main()
