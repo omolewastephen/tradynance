@@ -13,6 +13,11 @@ skimmable running record — see `git log` for full diffs.
   HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
   `Permissions-Policy`. `output: "standalone"` + `outputFileTracingRoot` for a minimal image.
 - **`/api/health`** — DB-ping liveness/readiness probe (used by the compose healthcheck).
+- **Non-Docker path too** (Docker is optional): `npm run build` (`scripts/build-standalone.sh` —
+  standalone output + static/public copied in), `npm run start:web`, and a **PM2**
+  `ecosystem.config.cjs` (dependency-free `.env` loader) running web + all five services; systemd
+  noted as an alternative. Verified: build produces a runnable standalone; ecosystem parses; a
+  service runs via the repo-root tsx path PM2 uses.
 - **Verified** by running the real production **standalone server**: `/api/health` → `db: up`, all
   six security headers present, home/login 200, and a full **browser login → dashboard with the CSP
   active and zero console errors**. Surfaced the key deploy gotcha (now documented): the CSP's

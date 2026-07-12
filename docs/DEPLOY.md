@@ -1,7 +1,8 @@
 # Deploying Tradynance
 
-The whole stack ships as Docker images and a compose file. This is the fastest path to a running
-deployment; read the **security & custody notes** before going anywhere near real funds.
+Two supported paths: **Docker Compose** (fastest, below) or **bare Node + PM2**
+(["Deploy without Docker"](#deploy-without-docker-bare-node--pm2)) — Tradynance is a plain Node app,
+Docker is optional. Read the **security & custody notes** before going anywhere near real funds.
 
 ## What runs
 - **web** — the Next.js app (standalone production server, port 3000).
@@ -55,13 +56,42 @@ staking/launchpad/NFT demo data and blog posts; prune what you don't want from t
 KYC/AML, money-transmitter licensing, and custody obligations are the **operator's
 responsibility** — this repo does not make you compliant. Flagged, not solved, in code.
 
-## Without Docker
+## Deploy without Docker (bare Node + PM2)
+
+Docker is optional — Tradynance is a plain Node app. On a host with **Node 20**, **PostgreSQL 16**,
+and (optionally) **Redis**, use the process manager [PM2](https://pm2.keymetrics.io/).
+
 ```bash
+# 1. Postgres + Redis on the host (or managed services). Create the DB + user.
+#    (Ubuntu: apt install postgresql redis-server, then createdb/createuser)
+
+# 2. Code + deps
+git clone <repo> && cd tradynance
 npm ci
-npx prisma migrate deploy --schema web/prisma/schema.prisma
-npm run db:seed
-npm run build --workspace web
-# run the standalone server:
-node web/.next/standalone/web/server.js     # after copying .next/static + public in (Docker does this)
-# and each service: npx tsx services/<name>/src/index.ts
+cp .env.docker.example .env      # fill it in — DATABASE_URL points at your Postgres host,
+                                 # and BETTER_AUTH_URL / NEXT_PUBLIC_APP_URL = your real origin
+
+# 3. Database
+npm run db:migrate               # prisma migrate deploy
+npm run db:seed                  # admin@tradynance.local / ChangeMe123!  (change it)
+
+# 4. Build the standalone server (+ copies static/public into it)
+npm run build
+
+# 5. Run everything with PM2 (web + all 5 services), from the repo root
+npm i -g pm2
+pm2 start ecosystem.config.cjs   # reads .env; defines web + market-data + market-maker
+                                 #   + liquidation-engine + sweeper + chain-watcher
+pm2 save && pm2 startup          # survive reboots
+pm2 logs                         # tail everything
+curl -f http://localhost:3000/api/health
 ```
+Then front `localhost:3000` with **nginx / Caddy** for TLS (same as the Docker path — HSTS only
+kicks in over HTTPS, and `BETTER_AUTH_URL`/`NEXT_PUBLIC_APP_URL` must equal that HTTPS origin).
+
+To run just the web server without PM2: `npm run start:web`
+(= `node web/.next/standalone/web/server.js`). Each service alone: `npx tsx services/<name>/src/index.ts`.
+
+**systemd** is a fine alternative to PM2 — one unit per process running the same commands
+(`ExecStart=/usr/bin/node .../server.js` for web, `ExecStart=.../node_modules/.bin/tsx services/<name>/src/index.ts`
+for services), with `EnvironmentFile=/path/to/.env`.
