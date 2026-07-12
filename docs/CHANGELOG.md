@@ -3,6 +3,26 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-12 — Deposit sweeper + hot-wallet collision fix
+- **Fixed a real custody bug**: the withdrawal hot wallet derived at addressIndex 0, which
+  **collided with the first user's deposit address** (deposit indexes also start at 0). The
+  treasury/hot wallet now derives on a **reserved BIP-44 account** (`m/44'/60'/1'/0/0`), completely
+  separate from user deposit addresses (account 0) — no overlap possible. (Old colliding address
+  `0x2cd1…939d` → treasury `0x38c1…23AE`.)
+- **Deposit sweeper** (`packages/core/src/chain/sweep.ts` + `services/sweeper`): consolidates
+  ETH_SEPOLIA deposits sitting on per-user derived addresses into the treasury (which also pays
+  withdrawals), closing the custody loop. For each funded deposit address it re-derives the key,
+  sanity-checks it controls the address, and sweeps `balance − gas` to the treasury. **Sweeping
+  writes NO LedgerEntry** — the user was already credited at deposit time — so the money invariant
+  is untouched; each move is recorded as a `Sweep` row (migration `..._sweep`) for the audit trail.
+  Standalone service runs every 5 min; wired into `npm run dev`. BTC sweeping deferred (UTXO/PSBT).
+- **`/admin/treasury`**: treasury address, live on-chain balance (best-effort, timeout-guarded),
+  the reserved-account note, and recent sweeps — added to the admin nav.
+- **Verified**: `sweep-check.ts` — treasury is valid + **doesn't collide with any user deposit
+  index**, and the sweep scans ETH_SEPOLIA deposit addresses (swept 0 in dev, no funded addresses).
+  Sweeper service boots; treasury page renders (live 0 ETH balance), no console errors. Live sweeps
+  need funded testnet deposit addresses. TESTNET ONLY.
+
 ## 2026-07-12 — Admin: asset addresses, holdings, transactions (+ futures fix)
 - **Fixed `/futures/[symbol]`** (and any core-importing page): Phase 12b re-exported the viem chain
   modules from the `@tradynance/core` barrel, so viem→`ox`'s dynamic require ("Critical dependency:

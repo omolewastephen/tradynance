@@ -5,3 +5,4 @@
 // broadcast — imports from "@tradynance/core/chain".
 export * from "./broadcast.js";
 export * from "./evm-withdraw.js";
+export * from "./sweep.js";

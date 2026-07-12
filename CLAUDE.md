@@ -46,6 +46,7 @@ services/
   market-data/           standalone poller (Binance-format tickers → Ticker cache)
   market-maker/          standalone liquidity provider (quotes a ladder around live mid)
   liquidation-engine/    standalone risk service (marks futures positions, liquidates + funding)
+  sweeper/               standalone custody service (sweeps deposits into the treasury/hot wallet)
   workers/               (BullMQ, later)
   # NB: spot matching runs in-transaction in packages/core (trading-engine.ts), not a
   # separate matching-engine process — see Phase 5 note below.

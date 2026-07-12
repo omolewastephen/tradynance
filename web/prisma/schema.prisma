@@ -202,6 +202,23 @@ model DerivationCounter {
   updatedAt DateTime @updatedAt
 }
 
+// Custody consolidation record: funds moved from a user's per-user deposit address into the
+// platform treasury/hot wallet. This is NOT a balance change — the user was already credited when
+// the deposit was detected — so a sweep writes NO LedgerEntry. This row is the ops/audit trail.
+// See packages/core/src/chain/sweep.ts.
+model Sweep {
+  id          String   @id @default(cuid())
+  network     String
+  userId      String?
+  fromAddress String
+  toAddress   String // treasury
+  amount      Decimal  @db.Decimal(36, 18)
+  txHash      String   @unique
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 enum LedgerEntryType {
   DEPOSIT
   WITHDRAWAL

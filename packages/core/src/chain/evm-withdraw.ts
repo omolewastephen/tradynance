@@ -8,18 +8,34 @@
 // funds error (surfaced to the caller, ledger untouched). ERC-20 token transfers are deferred —
 // native ETH only for now.
 
-import { createWalletClient, http, parseEther, isAddress, type Hex } from "viem";
+import { createWalletClient, createPublicClient, http, parseEther, formatEther, isAddress, type Hex } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
 
-// The hot wallet lives at a dedicated address index, kept clear of user deposit indexes.
-const HOT_INDEX = Number(process.env.HOT_WALLET_INDEX ?? 0);
+// The hot / treasury wallet is derived on a RESERVED BIP-44 account (m/44'/60'/{acct}'/0/0),
+// completely separate from user deposit addresses (which live on account 0: m/44'/60'/0'/0/index).
+// This is deliberate: an earlier design used addressIndex 0, which collided with the first user's
+// deposit address. Using a distinct account index removes any overlap. This one wallet both signs
+// withdrawals and is the destination the sweeper consolidates deposits into.
+export const TREASURY_ACCOUNT_INDEX = Number(process.env.TREASURY_ACCOUNT_INDEX ?? 1);
 
-/** The custodial hot-wallet signing account (throws if the mnemonic isn't configured). */
+/** The custodial hot/treasury signing account (throws if the mnemonic isn't configured). */
 export function hotEvmAccount() {
   const mnemonic = process.env.HD_WALLET_MNEMONIC;
   if (!mnemonic) throw new Error("HD_WALLET_MNEMONIC is not set");
-  return mnemonicToAccount(mnemonic, { addressIndex: HOT_INDEX });
+  return mnemonicToAccount(mnemonic, { accountIndex: TREASURY_ACCOUNT_INDEX, addressIndex: 0 });
+}
+
+/** Alias for clarity — the address deposits are swept into. */
+export function treasuryAddress(): string {
+  return hotEvmAccount().address;
+}
+
+/** Live Sepolia balance of the treasury, in ETH (human units). */
+export async function treasuryBalanceEth(rpcUrl?: string): Promise<string> {
+  const pub = createPublicClient({ chain: sepolia, transport: http(rpcUrl ?? process.env.ETH_SEPOLIA_RPC_URL) });
+  const bal = await pub.getBalance({ address: hotEvmAccount().address as Hex });
+  return formatEther(bal);
 }
 
 export interface EvmBroadcastInput {

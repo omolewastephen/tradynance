@@ -236,7 +236,13 @@
       "Bash(curl -s -o /tmp/fut.html -w \"%{http_code}\" \"http://localhost:3000/futures/BTCUSDT\")",
       "Bash(echo \"typecheck done \\($?\\)\")",
       "Bash(node /private/tmp/claude-501/-Users-user-Desktop-tradynance/985d359f-a0b0-4e26-8fe0-3a91d786a923/scratchpad/pw-check/deposit-addr.js)",
-      "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"UPDATE \\\\\"AssetNetwork\\\\\" SET \\\\\"depositAddress\\\\\"=NULL WHERE network='BTC_TESTNET';\")"
+      "Bash(psql \"postgresql://user@localhost:5432/tradynance\" -c \"UPDATE \\\\\"AssetNetwork\\\\\" SET \\\\\"depositAddress\\\\\"=NULL WHERE network='BTC_TESTNET';\")",
+      "Bash(echo \"sweeper tsc=$?\")",
+      "Bash(echo \"sweeper=$?\")",
+      "Bash(echo \"core=$?\")",
+      "Bash(node_modules/.bin/tsx --env-file=web/.env packages/core/scripts/sweep-check.ts)",
+      "Bash(pkill -f \"market-maker\\\\|market-data\\\\|liquidation\\\\|sweeper\")",
+      "Bash(node -e \"let f=require\\('fs'\\);let p='CLAUDE.md';let s=f.readFileSync\\(p,'utf8'\\);if\\(!s.includes\\('sweeper/'\\)\\){s=s.replace\\('  liquidation-engine/    standalone risk service \\(marks futures positions, liquidates + funding\\)','  liquidation-engine/    standalone risk service \\(marks futures positions, liquidates + funding\\)\\\\n  sweeper/               standalone custody service \\(sweeps deposits into the treasury/hot wallet\\)'\\);f.writeFileSync\\(p,s\\);console.log\\('CLAUDE updated'\\);}else console.log\\('already'\\);\")"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

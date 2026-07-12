@@ -8,10 +8,10 @@
   ],
   "scripts": {
     "dev": "bash scripts/dev.sh",
-    "dev:app": "concurrently -n web,market-data,market-maker,liquidation -c green,cyan,magenta,yellow -k \"npm run dev --workspace=web\" \"npm start --workspace=@tradynance/market-data\" \"npm start --workspace=@tradynance/market-maker\" \"npm start --workspace=@tradynance/liquidation-engine\"",
+    "dev:app": "concurrently -n web,market-data,market-maker,liquidation,sweeper -c green,cyan,magenta,yellow,blue -k \"npm run dev --workspace=web\" \"npm start --workspace=@tradynance/market-data\" \"npm start --workspace=@tradynance/market-maker\" \"npm start --workspace=@tradynance/liquidation-engine\" \"npm start --workspace=@tradynance/sweeper\"",
     "db:seed": "npm run db:seed --workspace=web",
     "db:seed:ci": "tsx web/prisma/seed-ci.ts",
-    "typecheck": "tsc -p web/tsconfig.json --noEmit && tsc -p packages/core/tsconfig.json --noEmit && tsc -p services/chain-watcher/tsconfig.json --noEmit && tsc -p services/market-data/tsconfig.json --noEmit && tsc -p services/market-maker/tsconfig.json --noEmit && tsc -p services/liquidation-engine/tsconfig.json --noEmit",
+    "typecheck": "tsc -p web/tsconfig.json --noEmit && tsc -p packages/core/tsconfig.json --noEmit && tsc -p services/chain-watcher/tsconfig.json --noEmit && tsc -p services/market-data/tsconfig.json --noEmit && tsc -p services/market-maker/tsconfig.json --noEmit && tsc -p services/liquidation-engine/tsconfig.json --noEmit && tsc -p services/sweeper/tsconfig.json --noEmit",
     "lint": "npm run lint --workspace=web",
     "test:core": "bash scripts/test-core.sh"
   },

@@ -25,6 +25,7 @@ import {
   Boxes,
   Layers,
   Receipt,
+  Vault,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,7 @@ export const adminSection: NavSection = {
     { href: "/admin/holdings", label: "Holdings", icon: Layers },
     { href: "/admin/transactions", label: "Transactions", icon: Receipt },
     { href: "/admin/assets", label: "Assets", icon: Boxes },
+    { href: "/admin/treasury", label: "Treasury", icon: Vault },
     { href: "/admin/kyc", label: "KYC review", icon: ShieldQuestion },
     { href: "/admin/deposits", label: "Deposits", icon: Landmark },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Banknote },

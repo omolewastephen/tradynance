@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-command dev launcher: ensures Postgres is up, then starts the web app + market-data +
-# market-maker + liquidation-engine together with prefixed, colored logs. Ctrl-C stops them all.
+# market-maker + liquidation-engine + sweeper together with prefixed, colored logs. Ctrl-C stops all.
 #
 #   npm run dev        (from the repo root)
 #
