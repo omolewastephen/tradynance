@@ -4,15 +4,23 @@ import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ManualCreditForm } from "./manual-credit-form";
+import { ClaimQueue, type ClaimRow } from "./claim-queue";
 
 export const metadata: Metadata = { title: "Deposits — Admin — Tradynance" };
 
 export default async function AdminDepositsPage() {
   await requireRole(["SUPER_ADMIN", "ADMIN", "FINANCE"]);
 
-  const [pending, recent] = await Promise.all([
+  const [claims, pending, recent] = await Promise.all([
+    // User-submitted "I've paid" claims awaiting review (identity + amount + txid attached).
     prisma.deposit.findMany({
-      where: { status: { in: ["PENDING", "CONFIRMED"] } },
+      where: { source: "CLAIM", status: { in: ["PENDING", "CONFIRMED"] } },
+      orderBy: { createdAt: "asc" }, // oldest first — review in order received
+      take: 50,
+      include: { user: { select: { email: true } }, asset: { select: { symbol: true } } },
+    }),
+    prisma.deposit.findMany({
+      where: { source: { not: "CLAIM" }, status: { in: ["PENDING", "CONFIRMED"] } },
       orderBy: { createdAt: "desc" },
       take: 25,
       include: { user: { select: { email: true } }, asset: { select: { symbol: true } } },
@@ -25,9 +33,40 @@ export default async function AdminDepositsPage() {
     }),
   ]);
 
+  const claimRows: ClaimRow[] = claims.map((d) => ({
+    id: d.id,
+    email: d.user.email,
+    symbol: d.asset.symbol,
+    network: d.network,
+    amount: d.amount.toString(),
+    txHash: d.txHash,
+    fromAddress: d.fromAddress,
+    createdAt: d.createdAt.toLocaleString(),
+  }));
+
   return (
     <div className="flex animate-fade-rise flex-col gap-6">
       <h1 className="font-display text-h1">Deposits</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Deposit claims — awaiting review
+            {claimRows.length > 0 && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                {claimRows.length}
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Users who reported sending a deposit. Verify the funds arrived (match the transaction
+            ID / amount), then approve to credit — or reject if it can&apos;t be confirmed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ClaimQueue claims={claimRows} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

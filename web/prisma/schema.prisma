@@ -322,7 +322,8 @@ model Deposit {
 
 enum DepositSource {
   CHAIN // detected by chain-watcher
-  MANUAL // admin-confirmed fallback
+  MANUAL // admin-confirmed fallback (admin-initiated)
+  CLAIM // user-submitted "I've paid" claim, awaiting admin review/approval
 }
 
 enum WithdrawalStatus {

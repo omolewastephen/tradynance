@@ -3,6 +3,25 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-13 — Deposit claims: user "I've paid" → admin approve/reject queue
+- **Traceability for the centralized-address deposit model.** With a shared admin-set address,
+  the chain can't tell you *which* user paid — so after sending, a user now submits a deposit
+  **claim** (amount + transaction ID + sending address) from the deposit page. It creates a
+  `PENDING` / `source=CLAIM` `Deposit` (new `DepositSource.CLAIM` enum value + migration),
+  rate-limited (8 / 10 min) and audited, with a unique-txid guard (one transfer = one deposit).
+- **Admin → Deposits** gained a **"Deposit claims — awaiting review"** queue (badge count, oldest
+  first) showing user + amount + network + txid + sender. **Approve & credit** runs the same
+  idempotent `creditDeposit` ledger path as the watcher/manual-credit; **Reject** marks it
+  `REJECTED` and notifies the user. Both audited (`deposit.claim_approve` / `_reject`). Real
+  chain deposits stay in the separate pending table (queue filters `source=CLAIM`).
+- Reworded the deposit-page copy from chain-first to the manual/centralized model.
+- **Verified end-to-end in the browser + DB:** claim → approve credits exactly once (balance
+  0→0.05, DEPOSIT ledger row with matching `balanceAfter` — conservation holds — deposit
+  `CREDITED`, "Deposit credited" notification); claim → reject leaves the balance untouched,
+  marks `REJECTED`, notifies. Typecheck + production build green.
+  *Impl note:* the queue buttons use `<form action>` (the codebase's proven server-action pattern);
+  an `onClick`-invoked server action silently failed to dispatch — see [[nextjs-server-action-form-not-onclick]].
+
 ## 2026-07-13 — Light/dark theme toggle + app-shell polish
 - **Light + dark mode**, user-switchable. A pre-paint inline script in the root layout resolves the
   theme before hydration (saved choice → OS `prefers-color-scheme` → dark default) so there's no

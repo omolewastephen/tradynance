@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoinIcon } from "@/components/brand/coin-icon";
 import { PayWithWalletLoader } from "@/components/web3/pay-with-wallet-loader";
 import { CopyAddress } from "./copy-address";
+import { ClaimForm } from "./claim-form";
 
 // Networks where "pay from your own wallet" (wagmi/Sepolia) applies.
 const WEB3_PAY_NETWORKS = new Set(["ETH_SEPOLIA"]);
@@ -142,10 +143,9 @@ export default async function DepositPage({
               </div>
 
               <p className="text-xs text-foreground-muted">
-                Send only {asset.symbol} on the {selected.network} network to this address.
-                Deposits are credited automatically after the required confirmations; until
-                the chain-watcher is running for this network they can be confirmed manually
-                by an admin.
+                Send only {asset.symbol} on the {selected.network} network to this address. After
+                sending, submit the deposit below — your balance is credited once we confirm the
+                funds have arrived.
               </p>
 
               {WEB3_PAY_NETWORKS.has(selected.network) && (
@@ -161,6 +161,21 @@ export default async function DepositPage({
           )}
         </CardContent>
       </Card>
+
+      {depositAddress && (
+        <Card className="max-w-lg">
+          <CardHeader>
+            <CardTitle>Confirm your deposit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClaimForm
+              assetSymbol={asset.symbol}
+              network={selected.network}
+              toAddress={depositAddress}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="max-w-lg">
         <CardHeader>
