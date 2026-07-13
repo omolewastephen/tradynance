@@ -4,6 +4,7 @@ import { UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { SignOutButton } from "@/components/sign-out-button";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
+import { ThemeToggle } from "@/components/app-shell/theme-toggle";
 
 // Sticky glass topbar. Glassmorphism is scoped to the nav per docs/DESIGN_SYSTEM.md.
 export function Topbar({ email }: { email: string }) {
@@ -15,11 +16,12 @@ export function Topbar({ email }: { email: string }) {
       </Link>
       <div className="hidden md:block" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <span className="hidden items-center gap-2 rounded-full border border-border-subtle bg-surface px-3 py-1.5 text-sm text-foreground-muted sm:flex">
           <UserRound className="size-4" />
           {email}
         </span>
+        <ThemeToggle />
         <NotificationBell />
         <SignOutButton />
       </div>

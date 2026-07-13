@@ -3,6 +3,20 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-13 — Light/dark theme toggle + app-shell polish
+- **Light + dark mode**, user-switchable. A pre-paint inline script in the root layout resolves the
+  theme before hydration (saved choice → OS `prefers-color-scheme` → dark default) so there's no
+  flash; a dependency-free `ThemeToggle` (sun/moon, in the topbar) flips `data-theme` and persists
+  to localStorage. Both palettes already existed as `[data-theme]` tokens — this wires the switch.
+- **Collapsible admin nav** (chosen option): the sidebar's "Admin" section is now a collapsible
+  group, **collapsed by default** (keeps the operator's own account nav front-and-centre), state
+  persisted per-section; a small dot hints when you're on an admin page while it's collapsed.
+- **Sidebar/topbar polish:** active routes get a left accent bar + emerald pill (Linear/Vercel
+  idiom), refined icon/hover states, smooth grid-rows collapse animation.
+- Verified in-browser both themes (login→dashboard→admin), toggle + persistence across navigation,
+  system-preference default, and **zero console/hydration errors**; production build green, First
+  Load JS unchanged (103 kB).
+
 ## 2026-07-13 — Deploy target: Netlify + Supabase + Zoho
 - **Supabase-ready Postgres:** added `directUrl` to the Prisma datasource — `DATABASE_URL` is the
   app/runtime connection (on Supabase: the pooled Supavisor URL, 6543, `?pgbouncer=true` — needed

@@ -21,10 +21,10 @@ export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm transition-colors",
+              "flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors",
               active
-                ? "bg-primary/10 font-medium text-primary"
-                : "text-foreground-muted hover:text-foreground",
+                ? "bg-primary-muted font-medium text-primary"
+                : "text-foreground-muted hover:bg-surface-raised hover:text-foreground",
             )}
           >
             <Icon className="size-4" />
