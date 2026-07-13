@@ -3,6 +3,26 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-13 — Deploy target: Netlify + Supabase + Zoho
+- **Supabase-ready Postgres:** added `directUrl` to the Prisma datasource — `DATABASE_URL` is the
+  app/runtime connection (on Supabase: the pooled Supavisor URL, 6543, `?pgbouncer=true` — needed
+  because serverless functions each open a connection) and `DIRECT_URL` is the migrations connection
+  (Supabase direct, 5432; the pooler can't run DDL). Off Supabase both are the same value; set in
+  every env template (local `.env`, `.env.example`, `.env.docker.example`, `render.yaml`).
+- **Zoho email:** `src/lib/email.ts` now has an **SMTP transport** (nodemailer) that takes
+  precedence when `SMTP_HOST` is set (Zoho Mail / ZeptoMail / any SMTP), with the existing Resend
+  HTTP path and console fallback after it. New `SMTP_*` env vars.
+- **Netlify hosting:** `netlify.toml` (root-based build so npm workspaces resolves `packages/core`;
+  `publish=web/.next`; Node 20) + `output:standalone` auto-disabled on Netlify (keyed off `NETLIFY`)
+  so Netlify's Next runtime bundles the serverless functions. `docs/DEPLOY.md` gained a full
+  **Netlify + Supabase + Zoho** section — incl. the hard truth that Netlify (serverless) **can't run
+  the 5 background services**, which must live on one small always-on host (PM2 `--only` the
+  services) against the same Supabase + Upstash Redis.
+- **Verified:** `prisma validate`/`generate`/`migrate status` green with `directUrl`; production
+  build green with standalone still emitted locally (NETLIFY unset); typecheck/lint green; the SMTP
+  send path exercised against a local catcher (EHLO→MAIL→RCPT→DATA delivered, messageId returned).
+  Not verifiable from here: an actual Netlify deploy and a real Zoho relay (needs the account).
+
 ## 2026-07-12 — Redis-backed rate limiting (multi-replica safe)
 - **App-level limiter** (`src/lib/rate-limit.ts`, withdrawals/orders/contact) is now backed by a
   **shared Redis sliding-window** (atomic Lua over a sorted set) when `REDIS_URL` is set, with the

@@ -21,7 +21,15 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // App/runtime connection. On serverless (Netlify) + Supabase this is the POOLED URL
+  // (Supavisor, port 6543, transaction mode) so many short-lived function invocations don't
+  // exhaust Postgres connections.
   url      = env("DATABASE_URL")
+  // Migrations / introspection connection. On Supabase this is the DIRECT URL (port 5432) —
+  // the pooler can't run schema DDL. Off Supabase (local, Docker, a plain Postgres) set it to
+  // the SAME value as DATABASE_URL. Prisma requires the env var to exist, so it's set in every
+  // env template.
+  directUrl = env("DIRECT_URL")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

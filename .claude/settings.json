@@ -266,7 +266,13 @@
       "Bash(node -e \"let y; try{y=require\\('yaml'\\)}catch\\(e\\){try{y=require\\('js-yaml'\\)}catch\\(e2\\){console.log\\('no yaml lib'\\);process.exit\\(0\\)}}; const s=require\\('fs'\\).readFileSync\\('render.yaml','utf8'\\); const d=\\(y.parse||y.load\\)\\(s\\); console.log\\('valid YAML —', d.services.length,'services,', d.databases.length,'db,', d.envVarGroups.length,'env group\\(s\\)'\\)\")",
       "Bash(redis-server --version)",
       "Bash(redis-cli --version)",
-      "Bash(perl -0pi -e 's/# Rate limiting is in-process.*?\\\\n# REDIS_URL=\"\"/# Redis \\\\\\(shared rate limiting across web replicas\\\\\\). Unset = in-process limiter \\\\\\(single node only\\\\\\).\\\\n# Set to run multiple web replicas safely. e.g. redis:\\\\/\\\\/default:PASS\\\\@host:6379\\\\nREDIS_URL=\"\"/s' src/app)"
+      "Bash(perl -0pi -e 's/# Rate limiting is in-process.*?\\\\n# REDIS_URL=\"\"/# Redis \\\\\\(shared rate limiting across web replicas\\\\\\). Unset = in-process limiter \\\\\\(single node only\\\\\\).\\\\n# Set to run multiple web replicas safely. e.g. redis:\\\\/\\\\/default:PASS\\\\@host:6379\\\\nREDIS_URL=\"\"/s' src/app)",
+      "Bash(node -e \"console.log\\('nodemailer', require\\('nodemailer/package.json'\\).version\\)\")",
+      "Bash(node -e \"const s=require\\('./package.json'\\).scripts; console.log\\(JSON.stringify\\(s,null,1\\)\\)\")",
+      "Bash(grep -rn \"prisma generate\\\\|postinstall\" package.json web/package.json packages/core/package.json)",
+      "Bash(ls web/node_modules/@netlify)",
+      "Bash(ls node_modules/@netlify)",
+      "Bash(perl -0pi -e 's/\\(      - key: DATABASE_URL\\\\n        fromDatabase: \\\\{ name: tradynance-db, property: connectionString \\\\}\\\\n\\)/$1      - key: DIRECT_URL\\\\n        fromDatabase: { name: tradynance-db, property: connectionString }\\\\n/g' render.yaml)"
     ],
     "additionalDirectories": [
       "/Users/user/Desktop/tradynance/web/src/app/api/auth",

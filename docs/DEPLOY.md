@@ -11,7 +11,8 @@ Docker is optional. Read the **security & custody notes** before going anywhere 
 - **liquidation-engine** — marks + liquidates futures positions, accrues funding.
 - **sweeper** — consolidates deposits into the treasury/hot wallet.
 - **chain-watcher** — detects on-chain deposits and credits them.
-- **postgres** (data) + **redis** (available for future rate-limit/cache) + a one-shot **migrate**
+- **postgres** (data) + **redis** (shared rate limiting across web replicas; optional — unset
+  `REDIS_URL` for single-node in-process limiting) + a one-shot **migrate**
   job that applies migrations and seeds before anything else starts.
 
 ## Quick start (Docker Compose)
@@ -55,19 +56,74 @@ Railway is per-service, so the web service uses `railway.json` (build + migrate-
      variable group is easiest.
 5. Run `npm run db:seed` **once** (Railway shell) after the first successful web deploy.
 
+### Netlify (web) + Supabase (DB) + Zoho (email)
+This is a **split** deploy: Netlify hosts the web app, but **Netlify is serverless and cannot run
+the 5 background services** (same limitation as Vercel). So:
+
+```
+┌── Netlify ─────────────┐   ┌── Supabase ──┐   ┌── Upstash ─┐   ┌── one small always-on host ─┐
+│  Next.js web app       │──▶│  Postgres    │◀──│  Redis     │◀──│  market-data, market-maker, │
+│  (serverless functions)│   │  (+ pooler)  │   │            │   │  liquidation, sweeper,      │
+└────────────────────────┘   └──────────────┘   └────────────┘   │  chain-watcher (PM2/Docker) │
+                                    ▲───────────────────────────── └─────────────────────────────┘
+```
+
+**1. Supabase (Postgres).** New project → **Project Settings → Database → Connection string**:
+- **`DATABASE_URL`** = the **Transaction pooler** URI (host `...pooler.supabase.com`, port **6543**).
+  Append **`?pgbouncer=true&connection_limit=1`** — serverless functions each open a connection, so
+  the pooler + `connection_limit=1` prevents exhausting Postgres.
+- **`DIRECT_URL`** = the **Direct connection** URI (port **5432**). Prisma uses it for migrations
+  (the pooler can't run DDL). Both are required — the schema declares `directUrl`.
+- Run migrations from your machine once: `cd web && DATABASE_URL=<direct> DIRECT_URL=<direct> npx
+  prisma migrate deploy && npm run db:seed` (use the **direct** URL for both here).
+
+**2. Upstash (Redis)** — serverless Redis for the rate limiter (Netlify functions are isolated, so
+in-process limiting doesn't hold). Create a database → copy the `redis://…` URL → set as
+**`REDIS_URL`** on the Netlify site (and on the workers host). Free tier is plenty to start.
+
+**3. Netlify (web).** New site from the repo. `netlify.toml` (repo root) sets the build command,
+`publish = web/.next`, Node 20, and forces `NETLIFY=true` (which disables `output:standalone` so
+Netlify's Next runtime bundles the app). Leave **Base directory empty** (build runs from the repo
+root so npm workspaces installs `packages/core`). Set env vars: `DATABASE_URL` (pooled),
+`DIRECT_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET`, and — **critical** — `NEXT_PUBLIC_APP_URL` +
+`BETTER_AUTH_URL` = your final Netlify URL / custom domain (see the CSP gotcha below). Deploy.
+
+**4. Zoho (email).** Set on **both** the Netlify site and the workers host:
+`SMTP_HOST=smtp.zoho.com`, `SMTP_PORT=465`, `SMTP_SECURE=true`, `SMTP_USER=you@yourdomain.com`,
+`SMTP_PASS=`*app-specific password* (Zoho → **My Account → Security → App Passwords**; required when
+2FA is on), `EMAIL_FROM="Tradynance <you@yourdomain.com>"`. The From domain must be verified in
+Zoho. Send yourself a password-reset to confirm delivery before relying on it.
+
+**5. The 5 workers.** They must run somewhere always-on — the cheapest is a **$5 VPS** (or a tiny
+Railway/Render/Fly service) running just the services against the same Supabase + Upstash. Use the
+[bare-Node + PM2 path](#deploy-without-docker-bare-node--pm2) but start **only the services** (skip
+`web`): `pm2 start ecosystem.config.cjs --only market-data,market-maker,liquidation-engine,sweeper,chain-watcher`.
+Give that host the same `DATABASE_URL`/`DIRECT_URL` (direct connection is fine there — they're
+long-lived), `REDIS_URL`, `HD_WALLET_MNEMONIC`, and RPC URLs. Without at least `market-data`, prices
+won't update on the site. **You can launch web-only first** and add the workers when you need live
+prices / futures liquidation / on-chain deposits.
+
+> Migrations don't run automatically on Netlify (no release phase), so always `prisma migrate
+> deploy` yourself (step 1) before/after a deploy that changes the schema.
+
 ## Environment (the parts that matter)
 - **`BETTER_AUTH_URL` / `NEXT_PUBLIC_APP_URL` must EXACTLY match the public origin** (scheme +
   host + port) the browser loads — e.g. `https://app.example.com`. The auth client calls this
   origin from the browser, and the app's `Content-Security-Policy: connect-src 'self'` will **block
   a mismatch** (you'll see "Refused to connect" and login will fail). This is the #1 deploy gotcha.
 - **`DATABASE_URL`** points at the compose service host `postgres` (not `localhost`), and its
-  user/password must match the `POSTGRES_*` values.
+  user/password must match the `POSTGRES_*` values. **`DIRECT_URL`** (Prisma migrate/generate) is
+  the same value everywhere *except Supabase*, where `DATABASE_URL` is the pooled URL (6543) and
+  `DIRECT_URL` is the direct URL (5432).
 - **`BETTER_AUTH_SECRET`** — generate with `openssl rand -base64 32`.
 - **Custody:** `HD_WALLET_MNEMONIC` is the hot wallet. In this repo it's testnet/dev only — in
   production it must come from a **secrets manager**, never a committed file or plain env. The
   treasury derives on account `TREASURY_ACCOUNT_INDEX` (default 1), separate from user deposit
   addresses; the hot wallet must be **funded** for on-chain withdrawals/sweeps to succeed.
-- Optional: `RESEND_API_KEY` (email), `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` (monitoring),
+- **Email** (optional, degrades to console logging when unset): set **either** SMTP
+  (`SMTP_HOST`/`SMTP_PORT`/`SMTP_SECURE`/`SMTP_USER`/`SMTP_PASS` — e.g. Zoho, see above) **or**
+  `RESEND_API_KEY`. SMTP wins if both are set. `EMAIL_FROM` must be a verified sender either way.
+- Optional: `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` (monitoring),
   `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (WalletConnect). All degrade gracefully when unset.
 
 ## First boot

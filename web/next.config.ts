@@ -30,8 +30,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Lean, self-contained production output for Docker (a minimal server + traced deps only).
-  output: "standalone",
+  // Lean, self-contained production output for Docker/PM2/Render/Railway (a minimal Node server +
+  // traced deps only). Netlify's Next runtime does its own function bundling and doesn't use
+  // `standalone`, so disable it there (Netlify sets NETLIFY=true during the build).
+  output: process.env.NETLIFY ? undefined : "standalone",
   // Trace from the monorepo root so hoisted workspace deps + the generated Prisma client under
   // packages/core are included in the standalone bundle.
   outputFileTracingRoot: path.join(process.cwd(), ".."),

@@ -1,0 +1,24 @@
+# Netlify — hosts the Tradynance WEB app only.
+#
+# IMPORTANT: Netlify is serverless. The 5 always-on background services (market-data,
+# market-maker, liquidation-engine, sweeper, chain-watcher) CANNOT run here — run them on a
+# small always-on host (a $5 VPS / Railway / Render / Fly) pointing at the same Supabase DB +
+# Redis. Without at least `market-data`, live prices won't update. See docs/DEPLOY.md.
+#
+# Leave the site's "Base directory" EMPTY in the Netlify UI (build runs from the repo root so
+# npm workspaces installs `packages/core`). The @netlify/plugin-nextjs is auto-installed.
+
+[build]
+  # Install the whole workspace from root, generate the Prisma client into packages/core, then
+  # build the Next app. output:standalone is auto-disabled on Netlify (see web/next.config.ts —
+  # keyed off NETLIFY, forced below) so the plugin's own function bundling is used instead.
+  command = "npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma && npm run build --workspace web"
+  publish = "web/.next"
+
+[build.environment]
+  NETLIFY = "true"
+  # Netlify's build image ships Node 18 by default; this app needs 20+.
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -1,11 +1,17 @@
 import "server-only";
 
-// Transactional email. Env-gated on RESEND_API_KEY: with a key set, sends via Resend's HTTP API
-// (no SDK dependency — just fetch); without one, it logs to the console exactly as before, so the
-// reset / verification / withdrawal-OTP flows stay end-to-end testable in dev. Same pattern as the
-// Sentry wiring: production-ready, inert until you supply the credential.
+import nodemailer, { type Transporter } from "nodemailer";
+
+// Transactional email. Three transports, picked by which credentials are present, in order:
+//   1. SMTP  — if SMTP_HOST is set (Zoho Mail / ZeptoMail / any SMTP provider) via nodemailer.
+//   2. Resend — else if RESEND_API_KEY is set, via Resend's HTTP API (no SDK, just fetch).
+//   3. Console — else logs to the console, so the reset / verification / withdrawal-OTP flows
+//      stay end-to-end testable in dev. Production-ready, inert until you supply a credential.
 //
-// Set RESEND_API_KEY + EMAIL_FROM (a verified sender) in production. See .env.example.
+// Zoho: set SMTP_HOST=smtp.zoho.com, SMTP_PORT=465, SMTP_SECURE=true, SMTP_USER=<your zoho
+// address>, SMTP_PASS=<app-specific password>, EMAIL_FROM="Tradynance <you@yourdomain.com>".
+// (Zoho requires an app-specific password when 2FA is on, and a verified From domain.) See
+// .env.example.
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -20,14 +26,56 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Lazy singleton SMTP transporter — created once when SMTP_HOST is present. Serverless-safe
+// (a short connect→send→close per invocation is fine for low-volume transactional mail).
+let smtpTransport: Transporter | null | undefined;
+function getSmtpTransport(): Transporter | null {
+  if (smtpTransport !== undefined) return smtpTransport;
+  const host = process.env.SMTP_HOST;
+  if (!host) {
+    smtpTransport = null;
+    return null;
+  }
+  const port = Number(process.env.SMTP_PORT ?? 465);
+  smtpTransport = nodemailer.createTransport({
+    host,
+    port,
+    // 465 = implicit TLS; 587 = STARTTLS. Honour SMTP_SECURE if set, else infer from the port.
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465,
+    auth:
+      process.env.SMTP_USER && process.env.SMTP_PASS
+        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        : undefined,
+  });
+  return smtpTransport;
+}
+
 export async function sendEmail(
   email: EmailInput,
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM ?? "Tradynance <onboarding@resend.dev>";
 
+  // 1. SMTP (Zoho / any provider) takes precedence when configured.
+  const transport = getSmtpTransport();
+  if (transport) {
+    try {
+      const info = await transport.sendMail({
+        from,
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        text: email.text ?? stripHtml(email.html),
+      });
+      return { ok: true, id: info.messageId };
+    } catch (err) {
+      console.error("[email] SMTP send error", (err as Error).message);
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
   if (!apiKey) {
-    console.log(`[email] (dev, no RESEND_API_KEY) → ${email.to} | ${email.subject}`);
+    console.log(`[email] (dev, no SMTP_HOST / RESEND_API_KEY) → ${email.to} | ${email.subject}`);
     console.log(`[email] ${email.text ?? stripHtml(email.html)}`);
     return { ok: true };
   }
