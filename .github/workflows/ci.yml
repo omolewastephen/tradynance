@@ -32,6 +32,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tradynance?schema=public
+      # No pooler in CI — same value as DATABASE_URL. Required now that the schema declares directUrl.
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tradynance?schema=public
       BETTER_AUTH_SECRET: ci-secret-not-used-in-production
       BETTER_AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000

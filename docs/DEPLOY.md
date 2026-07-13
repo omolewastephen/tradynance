@@ -45,6 +45,7 @@ Railway is per-service, so the web service uses `railway.json` (build + migrate-
 1. **New Project → Deploy from repo.** The first service picks up `railway.json` → that's **web**.
 2. Add plugins: **PostgreSQL** and **Redis**.
 3. On **web**, set variables: `DATABASE_URL=${{Postgres.DATABASE_URL}}`,
+   `DIRECT_URL=${{Postgres.DATABASE_URL}}` (same — no separate pooler on Railway),
    `REDIS_URL=${{Redis.REDIS_URL}}`, `BETTER_AUTH_SECRET` (generate), and
    `NEXT_PUBLIC_APP_URL` + `BETTER_AUTH_URL` = the web service's public domain. Add the rest from
    `.env.docker.example`. Enable a public domain for web.
