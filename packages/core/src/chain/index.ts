@@ -6,3 +6,4 @@
 export * from "./broadcast.js";
 export * from "./evm-withdraw.js";
 export * from "./sweep.js";
+export * from "./verify.js";

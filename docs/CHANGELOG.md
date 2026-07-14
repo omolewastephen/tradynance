@@ -3,6 +3,27 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-14 — Auto-match: on-chain verification of deposit claims
+- **Obvious claims verify themselves.** New `packages/core/src/chain/verify.ts`
+  (`verifyDepositTx`, viem-isolated in the chain subpath): given a claim's txid + the deposit
+  address shown + the claimed amount, it asks the chain whether that exact transfer happened —
+  BTC testnet via esplora, ETH Sepolia via viem. Returns a typed outcome (`verified` /
+  `amount_short` / `address_mismatch` / `not_found` / `unsupported` / `error`).
+- **At claim time** (verifiable networks only), a match flips the claim `PENDING → CONFIRMED` and
+  records live confirmations, so it reaches the admin **pre-verified**. **In the admin queue**, a
+  verified claim shows a green **"⛓ Chain-verified · N conf"** badge (one-click approve); unverified
+  ones get a **Re-check** button (`recheckDepositClaim`) for claims submitted before the tx
+  confirmed. Approval still credits through the same idempotent `creditDeposit` path.
+- **Non-chain coins are untouched** (explicit requirement): `verifyDepositTx`/`isVerifiableNetwork`
+  return `unsupported` for anything but the two integrated testnets, so those claims skip
+  verification entirely and stay the plain manual "Approve & credit" flow — they show a neutral
+  "Manual review" tag, no auto-verify, no confirmation change.
+- **Verified:** 8/8 core assertions against **live BTC testnet** data (exact→verified w/ real
+  confirmations, over-claim→amount_short, wrong-addr→address_mismatch, fake txid→not_found,
+  synthetic/non-chain→unsupported); full in-app E2E with a real testnet tx behind a centralized
+  admin address — claim auto-verified (50 confs) → green badge → approve credited once
+  (0.05→0.0509028, DEPOSIT ledger row, conservation holds). Typecheck green.
+
 ## 2026-07-13 — Deposit claims: user "I've paid" → admin approve/reject queue
 - **Traceability for the centralized-address deposit model.** With a shared admin-set address,
   the chain can't tell you *which* user paid — so after sending, a user now submits a deposit

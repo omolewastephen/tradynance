@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { Prisma } from "@tradynance/core";
+import { verifyDepositTx, isVerifiableNetwork } from "@tradynance/core/chain";
 import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateWallet } from "@/lib/wallet";
@@ -80,6 +81,28 @@ export async function claimDeposit(formData: FormData): Promise<ClaimResult> {
       },
     });
 
+    // Best-effort on-chain auto-verify — ONLY for the integrated testnets. For every other
+    // coin/network this is skipped entirely, so the manual/centralized flow is unchanged: the
+    // claim stays PENDING for an admin to confirm exactly as before. Never fatal.
+    let autoVerified = false;
+    if (input.txHash && isVerifiableNetwork(input.network) && input.toAddress) {
+      const v = await verifyDepositTx({
+        network: input.network,
+        txHash: input.txHash,
+        toAddress: input.toAddress,
+        expectedAmount: input.amount,
+      });
+      if (v.status === "verified") {
+        // Chain confirms this payment. Mark CONFIRMED (ready to credit) — still needs an admin
+        // approve; crediting stays a deliberate action through creditDeposit.
+        await prisma.deposit.update({
+          where: { id: deposit.id },
+          data: { status: "CONFIRMED", confirmations: v.confirmations },
+        });
+        autoVerified = true;
+      }
+    }
+
     await recordAudit({
       actorId: session.user.id,
       action: "deposit.claim",
@@ -91,13 +114,16 @@ export async function claimDeposit(formData: FormData): Promise<ClaimResult> {
         amount: input.amount,
         txHash: input.txHash || null,
         fromAddress: input.fromAddress || null,
+        autoVerified,
       },
     });
 
     revalidatePath(`/wallet/deposit/${input.assetSymbol}`);
     return {
       ok: true,
-      message: "Deposit submitted for review. You'll be credited once an admin confirms receipt.",
+      message: autoVerified
+        ? "Deposit verified on-chain and submitted — an admin will credit it shortly."
+        : "Deposit submitted for review. You'll be credited once an admin confirms receipt.",
     };
   } catch (e) {
     // Duplicate txid — either this user already claimed it, or it's already on record.

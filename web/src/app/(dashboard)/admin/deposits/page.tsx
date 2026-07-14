@@ -33,6 +33,10 @@ export default async function AdminDepositsPage() {
     }),
   ]);
 
+  // Display-only hint mirroring core's isVerifiableNetwork (kept local so the page render doesn't
+  // import the viem-backed chain module); the recheck action re-checks authoritatively.
+  const VERIFIABLE = new Set(["BTC_TESTNET", "ETH_SEPOLIA"]);
+
   const claimRows: ClaimRow[] = claims.map((d) => ({
     id: d.id,
     email: d.user.email,
@@ -42,6 +46,9 @@ export default async function AdminDepositsPage() {
     txHash: d.txHash,
     fromAddress: d.fromAddress,
     createdAt: d.createdAt.toLocaleString(),
+    status: d.status,
+    confirmations: d.confirmations,
+    verifiable: VERIFIABLE.has(d.network) && !!d.txHash && !d.txHash.startsWith("claim:"),
   }));
 
   return (

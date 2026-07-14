@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { creditDeposit, notify, type PrismaClient } from "@tradynance/core";
+import { verifyDepositTx, isVerifiableNetwork } from "@tradynance/core/chain";
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { recordAudit } from "@/lib/audit";
@@ -137,6 +138,52 @@ export async function approveDepositClaim(formData: FormData): Promise<ClaimActi
 
   revalidatePath("/admin/deposits");
   return { ok: true };
+}
+
+export type RecheckResult = { ok: true; message: string } | { ok: false; error: string };
+
+/**
+ * Re-run on-chain verification for a claim (e.g. it was submitted before the tx confirmed). On a
+ * match it flips PENDING → CONFIRMED + records confirmations, so the row shows the chain-verified
+ * badge and can be approved with confidence. Never credits — approval stays a separate step.
+ * Only meaningful for verifiable networks; a no-op message otherwise (manual flow unchanged).
+ */
+export async function recheckDepositClaim(formData: FormData): Promise<RecheckResult> {
+  await requireRole([...FINANCE_ROLES]);
+
+  const depositId = String(formData.get("depositId") ?? "");
+  const deposit = await prisma.deposit.findUnique({ where: { id: depositId } });
+  if (!deposit || deposit.source !== "CLAIM") return { ok: false, error: "Claim not found" };
+  if (deposit.status === "CREDITED") return { ok: false, error: "Already credited" };
+  if (deposit.status === "REJECTED") return { ok: false, error: "This claim was rejected" };
+  if (!isVerifiableNetwork(deposit.network) || !deposit.txHash || deposit.txHash.startsWith("claim:")) {
+    return { ok: false, error: "This deposit can't be auto-verified — review it manually." };
+  }
+
+  const v = await verifyDepositTx({
+    network: deposit.network,
+    txHash: deposit.txHash,
+    toAddress: deposit.toAddress,
+    expectedAmount: deposit.amount.toString(),
+  });
+
+  switch (v.status) {
+    case "verified":
+      await prisma.deposit.update({
+        where: { id: deposit.id },
+        data: { status: "CONFIRMED", confirmations: v.confirmations },
+      });
+      revalidatePath("/admin/deposits");
+      return { ok: true, message: `Chain-verified: ${v.onchainAmount} received, ${v.confirmations} confirmation(s).` };
+    case "amount_short":
+      return { ok: false, error: `On-chain tx pays only ${v.onchainAmount} — less than the claimed amount.` };
+    case "address_mismatch":
+      return { ok: false, error: `Transaction doesn't pay the deposit address (${v.detail}).` };
+    case "not_found":
+      return { ok: false, error: "Transaction not found on-chain yet — it may still be pending." };
+    default:
+      return { ok: false, error: "Couldn't reach the chain to verify. Try again shortly." };
+  }
 }
 
 /** Reject a user's deposit claim (no money moves) and notify them. */
