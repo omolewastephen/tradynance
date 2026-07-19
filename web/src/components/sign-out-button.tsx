@@ -1,22 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
-  const router = useRouter();
-
   return (
     <Button
       variant="outline"
       size="sm"
       onClick={async () => {
         await authClient.signOut();
-        router.push("/login");
-        router.refresh();
+        // Hard navigation so all server components re-render with the session cleared — a soft
+        // router.push + router.refresh races and can leave the user on a now-stale authed page.
+        window.location.assign("/login");
       }}
     >
       <LogOut className="size-4" />

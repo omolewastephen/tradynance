@@ -3,6 +3,21 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-19 — Fix: login sometimes stuck on /login (dashboard "307")
+- **Root cause:** the login form did `router.push(next)` immediately followed by `router.refresh()`.
+  Across the logged-out→logged-in boundary that races — the refresh can cancel the soft navigation
+  or serve a stale logged-out router-cache entry for `/dashboard`, so the user stayed on `/login`
+  and any direct hit to a protected route bounced back with a 307 (the normal no-session redirect).
+  Intermittent, which is why it looked like "the dashboard is broken."
+- **Fix:** cross the auth boundary with a **hard navigation** (`window.location.assign`) in both the
+  credential and TOTP paths, guaranteeing every server component (layouts, the dashboard's
+  `requireUser`) re-renders with the just-set session cookie. Same hardening applied to **sign-out**.
+- Also **sanitised the `next` redirect target** (must be a same-origin relative path) — it came
+  straight from the query string, so `?next=//evil.com` was an open-redirect risk. Removed an
+  unused `headers` import (lint warning).
+- **Verified:** 5/5 fresh browser logins now land on `/dashboard` (was intermittently stuck before);
+  full route smoke test green; typecheck + lint clean.
+
 ## 2026-07-14 — Auto-match: on-chain verification of deposit claims
 - **Obvious claims verify themselves.** New `packages/core/src/chain/verify.ts`
   (`verifyDepositTx`, viem-isolated in the chain subpath): given a claim's txid + the deposit

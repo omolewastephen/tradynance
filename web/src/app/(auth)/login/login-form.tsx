@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -14,9 +14,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Controller } from "react-hook-form";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  // Only allow same-origin relative paths as the post-login destination — never an absolute or
+  // protocol-relative URL (open-redirect guard, since `next` comes straight from the query string).
+  const rawNext = searchParams.get("next") ?? "/dashboard";
+  const dest = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
   const [serverError, setServerError] = useState<string | null>(null);
   const [awaitingTotp, setAwaitingTotp] = useState(false);
 
@@ -48,8 +50,11 @@ export function LoginForm() {
       return;
     }
 
-    router.push(next);
-    router.refresh();
+    // Hard navigation across the auth boundary: guarantees every server component (layouts, the
+    // dashboard's requireUser check) re-renders with the just-set session cookie. A soft
+    // router.push + router.refresh here races — the refresh can cancel the navigation or serve a
+    // stale logged-out router-cache entry for the destination, leaving the user stuck on /login.
+    window.location.assign(dest);
   }
 
   async function onTotpSubmit(values: TotpInput) {
@@ -64,8 +69,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push(next);
-    router.refresh();
+    window.location.assign(dest);
   }
 
   if (awaitingTotp) {
