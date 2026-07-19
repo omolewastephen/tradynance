@@ -17,7 +17,6 @@ const PROTECTED_PREFIXES = [
   "/trade",
   "/convert",
 ];
-const AUTH_PAGES = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -30,10 +29,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p));
-  if (isAuthPage && sessionCookie) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // NOTE: we intentionally do NOT redirect /login → /dashboard here on cookie *presence*. The
+  // cookie check is optimistic (edge, no DB), so a stale/invalid session cookie would bounce
+  // /login → /dashboard → (requireUser redirects back) → /login forever — the exact loop that hit
+  // Chrome (which held an old cookie) while Safari (clean) was fine. The login/register pages do a
+  // real getSession() check and redirect valid sessions to /dashboard instead.
 
   return NextResponse.next();
 }
@@ -49,7 +49,5 @@ export const config = {
     "/markets/:path*",
     "/trade/:path*",
     "/convert/:path*",
-    "/login",
-    "/register",
   ],
 };

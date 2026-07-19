@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,11 @@ export function LoginForm() {
   const dest = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/dashboard";
   const [serverError, setServerError] = useState<string | null>(null);
   const [awaitingTotp, setAwaitingTotp] = useState(false);
+  // Submit is disabled until the component mounts (hydrates). Before that the JS onSubmit handler
+  // isn't attached, so a click would fall back to a native GET form submission — which puts the
+  // password in the URL (history + server logs). Gate the button on hydration to prevent that.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   const credentialsForm = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -118,7 +123,7 @@ export function LoginForm() {
             Trust this device for 30 days
           </Label>
         </div>
-        <Button type="submit" disabled={totpForm.formState.isSubmitting}>
+        <Button type="submit" disabled={!hydrated || totpForm.formState.isSubmitting}>
           {totpForm.formState.isSubmitting ? "Verifying…" : "Verify"}
         </Button>
       </form>
@@ -184,7 +189,11 @@ export function LoginForm() {
           Remember me
         </Label>
       </div>
-      <Button type="submit" disabled={credentialsForm.formState.isSubmitting} className="mt-1">
+      <Button
+        type="submit"
+        disabled={!hydrated || credentialsForm.formState.isSubmitting}
+        className="mt-1"
+      >
         {credentialsForm.formState.isSubmitting ? "Signing in…" : "Sign in"}
       </Button>
     </form>

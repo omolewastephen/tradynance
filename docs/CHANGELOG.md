@@ -3,6 +3,39 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-19 — Fix: login↔dashboard loop when app opened on a non-localhost origin
+- **Root cause (two layers):** the browser auth client hardcoded
+  `baseURL: NEXT_PUBLIC_APP_URL` (`localhost:3000`). Opened on *any other* origin — `127.0.0.1`, a
+  **LAN IP** (the dev server prints one), or a deployed domain — the login POST went cross-origin to
+  `localhost:3000`, and (1) the CSP `connect-src 'self'` **blocked** it, or once same-origin, (2)
+  better-auth returned **403** because `trustedOrigins` defaults to just `BETTER_AUTH_URL`. Either
+  way no session landed on the real origin, so every protected route 307'd back to `/login` — the
+  "goes to dashboard, bounces to login, loops, then 307" the user saw.
+- **Fix:** auth client now calls its **own origin** (`window.location.origin`) instead of a fixed
+  URL, so login is same-origin (CSP-allowed) from wherever the app is served. Added
+  **`trustedOrigins`** to the server auth: production trusts the configured domains
+  (`BETTER_AUTH_URL`/`NEXT_PUBLIC_APP_URL`), development also trusts the request's own origin (so a
+  LAN IP / 127.0.0.1 / another device on your network works). Null-safe (better-auth calls it
+  without a request in some paths).
+- **Second root cause — the "works in Safari, not Chrome" loop:** the middleware optimistically
+  redirected `/login` → `/dashboard` whenever a session *cookie was present* (edge check, no DB
+  validation). A **stale/invalid** cookie (which Chrome had accumulated from the earlier broken
+  attempts, while Safari's jar was clean) then looped forever: `/dashboard` → `requireUser()` finds
+  the session invalid → `/login` → middleware sees the cookie → `/dashboard` → … (Chrome:
+  `ERR_TOO_MANY_REDIRECTS`). **Fix:** middleware no longer bounces auth pages on cookie presence;
+  the login/register pages do a **real `getSession()`** check and redirect only genuinely valid
+  sessions. A stale cookie now lands cleanly on `/login` and self-heals on the next login.
+- **Hardening:** the login submit button is disabled until the form hydrates — before hydration a
+  click fell back to a native GET, putting the password in the URL (history + logs).
+- **Verified:** 4/4 logins → `/dashboard` from both `localhost` and `127.0.0.1`; an invalid cookie →
+  `/dashboard` now does exactly 1 redirect → `/login` (was infinite / `ERR_TOO_MANY_REDIRECTS`) and
+  self-heals on fresh login; a valid session still auto-redirects `/login` → `/dashboard`. Typecheck
+  + lint clean.
+- **Note (not a code bug):** "market-data failing fetch" is `data-api.binance.vision` being
+  **unreachable from the host** (Binance geo/network block — ping timed out here). The app degrades
+  (klines proxy → 502, `/api/markets` serves cached DB tickers). Point `MARKET_DATA_API_URL` at a
+  source reachable from your region if Binance is blocked.
+
 ## 2026-07-19 — Fix: login sometimes stuck on /login (dashboard "307")
 - **Root cause:** the login form did `router.push(next)` immediately followed by `router.refresh()`.
   Across the logged-out→logged-in boundary that races — the refresh can cancel the soft navigation

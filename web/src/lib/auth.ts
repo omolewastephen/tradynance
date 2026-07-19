@@ -23,6 +23,24 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
 
+  // Which origins may initiate auth requests (CSRF guard). Defaults to just baseURL, which 403s
+  // sign-in from any other origin — so opening the app on a LAN IP / 127.0.0.1 / a domain that
+  // isn't exactly BETTER_AUTH_URL fails, and the user loops back to /login. In production we trust
+  // only the configured domains (set BETTER_AUTH_URL / NEXT_PUBLIC_APP_URL to your real origin);
+  // in development we also trust whatever local origin the app is actually opened from, so testing
+  // from another device on your network (or via 127.0.0.1) just works.
+  trustedOrigins: (request) => {
+    const origins = [process.env.BETTER_AUTH_URL, process.env.NEXT_PUBLIC_APP_URL].filter(
+      (v): v is string => Boolean(v),
+    );
+    // `request` can be undefined when better-auth resolves trusted origins outside a request.
+    if (process.env.NODE_ENV !== "production") {
+      const origin = request?.headers?.get("origin");
+      if (origin) origins.push(origin);
+    }
+    return origins;
+  },
+
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
