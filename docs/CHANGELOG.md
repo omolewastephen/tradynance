@@ -3,6 +3,20 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-19 — Remove blog; seed BTC/ETH sample deposit addresses; fix seed
+- **Removed the blog** (marketing `/blog` + admin `/admin/blog` + `seed-cms.ts` + the blog-only
+  `markdown.ts`, plus the nav/header/footer links). Marketing-only content, not core; restorable
+  from git history. `Post` model left in the schema (harmless; dropping it would need a migration).
+- **Deposit addresses for all coins:** `AssetNetwork.depositAddress` is admin-settable per network
+  (Admin → Assets) for every coin. The seed now pre-fills **sample** addresses for **BTC**
+  (BTC_TESTNET) and **ETH** (ETH_SEPOLIA) only; every other coin is blank for the admin to fill.
+  Re-seed won't clobber an admin-set address.
+- **Fixed the seed** (`prisma db seed`): it imports `auth`, which eagerly imported `email.ts`
+  (`import "server-only"`) and threw under tsx (no bundler) — a deploy blocker since seeding runs
+  after migrate. `auth.ts` now lazy-imports email inside its callbacks, so importing `auth` from a
+  plain-Node context no longer pulls `server-only`. Verified: full seed runs clean; BTC/ETH get
+  sample addresses, others null.
+
 ## 2026-07-19 — Fix: login↔dashboard loop when app opened on a non-localhost origin
 - **Root cause (two layers):** the browser auth client hardcoded
   `baseURL: NEXT_PUBLIC_APP_URL` (`localhost:3000`). Opened on *any other* origin — `127.0.0.1`, a

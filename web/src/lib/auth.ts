@@ -4,10 +4,10 @@ import { username, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 
 import { prisma } from "@/lib/prisma";
-import {
-  sendPasswordResetEmail,
-  sendVerificationEmail as sendVerifyEmail,
-} from "@/lib/email";
+// NB: email.ts is imported LAZILY inside the callbacks below (not at the top). It carries
+// `import "server-only"`, which throws when this module is loaded outside Next's bundler — e.g. by
+// `prisma db seed` (tsx), which imports `auth` to create the admin user. Deferring the import keeps
+// the seed (and any other plain-Node importer of `auth`) working.
 
 function generateReferralCode() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I ambiguity
@@ -47,7 +47,8 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     autoSignIn: false,
     sendResetPassword: async ({ user, url }) => {
-      // Real send via Resend when RESEND_API_KEY is set; console fallback in dev (see email.ts).
+      // Real send via Resend/SMTP when configured; console fallback in dev (see email.ts).
+      const { sendPasswordResetEmail } = await import("@/lib/email");
       await sendPasswordResetEmail(
         user.email,
         url,
@@ -60,7 +61,8 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendVerifyEmail(user.email, url);
+      const { sendVerificationEmail } = await import("@/lib/email");
+      await sendVerificationEmail(user.email, url);
     },
   },
 

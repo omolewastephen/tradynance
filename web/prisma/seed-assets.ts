@@ -10,6 +10,9 @@ type SeedNetwork = {
   withdrawalFee: string;
   requiresMemo?: boolean;
   contractAddress?: string;
+  // Central/shared deposit address shown to every user (the shared-custodial model). Seeded only
+  // for BTC + ETH as SAMPLES — replace them, and fill in the other coins, from Admin → Assets.
+  depositAddress?: string;
 };
 
 type SeedAsset = {
@@ -24,13 +27,29 @@ const ASSETS: SeedAsset[] = [
     symbol: "BTC",
     name: "Bitcoin",
     decimals: 8,
-    networks: [{ network: "BTC_TESTNET", minDeposit: "0.0001", withdrawalFee: "0.00005" }],
+    networks: [
+      {
+        network: "BTC_TESTNET",
+        minDeposit: "0.0001",
+        withdrawalFee: "0.00005",
+        // SAMPLE testnet address — replace with your real custody address in Admin → Assets.
+        depositAddress: "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
+      },
+    ],
   },
   {
     symbol: "ETH",
     name: "Ethereum",
     decimals: 18,
-    networks: [{ network: "ETH_SEPOLIA", minDeposit: "0.001", withdrawalFee: "0.0005" }],
+    networks: [
+      {
+        network: "ETH_SEPOLIA",
+        minDeposit: "0.001",
+        withdrawalFee: "0.0005",
+        // SAMPLE address — replace with your real custody address in Admin → Assets.
+        depositAddress: "0x000000000000000000000000000000000000dEaD",
+      },
+    ],
   },
   {
     symbol: "USDT",
@@ -139,12 +158,15 @@ export async function seedAssets() {
           withdrawalFee: net.withdrawalFee,
           requiresMemo: net.requiresMemo ?? false,
           contractAddress: net.contractAddress,
+          depositAddress: net.depositAddress,
         },
         update: {
           minDeposit: net.minDeposit,
           withdrawalFee: net.withdrawalFee,
           requiresMemo: net.requiresMemo ?? false,
           contractAddress: net.contractAddress,
+          // Only set the sample address on first seed; don't clobber an admin-set address on re-seed.
+          ...(net.depositAddress ? { depositAddress: net.depositAddress } : {}),
         },
       });
     }
