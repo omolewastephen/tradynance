@@ -20,7 +20,7 @@ generator client {
   // "native" = whatever the build machine is (local dev, Docker, Railway). Netlify builds on
   // Ubuntu but runs Functions on AWS Lambda (RHEL/OpenSSL 3), so the native engine won't load
   // there — add the Lambda target explicitly or every query fails at runtime (db:down).
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
