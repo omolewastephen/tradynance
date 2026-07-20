@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { PrismaPlugin } from "@prisma/nextjs-monorepo-workaround-plugin";
 
 // Production security headers applied to every response. The CSP is tuned to work with Next's App
 // Router (which injects inline bootstrap scripts/styles) while still locking down framing, object
@@ -37,6 +38,12 @@ const nextConfig: NextConfig = {
   // Trace from the monorepo root so hoisted workspace deps + the generated Prisma client under
   // packages/core are included in the standalone bundle.
   outputFileTracingRoot: path.join(process.cwd(), ".."),
+  // Force Prisma's native query engine (.node binary) into every server bundle. Netlify's bundler
+  // doesn't detect it on its own → "Query Engine could not be located for rhel-openssl-3.0.x" at
+  // runtime (db:down). Belt-and-suspenders with the PrismaPlugin in webpack() below.
+  outputFileTracingIncludes: {
+    "**": ["../packages/core/generated/prisma/**/*.node"],
+  },
 
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
@@ -46,7 +53,7 @@ const nextConfig: NextConfig = {
   // so Next.js needs to transpile it like first-party code rather than treating it as a
   // pre-built node_modules package.
   transpilePackages: ["@tradynance/core"],
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // The core package uses ESM-correct `.js` extensions in its relative imports (the modern
     // standard, required by Node ESM and used by tsx). Webpack can't resolve `./ledger.js` to
     // the actual `./ledger.ts` source without this mapping.
@@ -54,6 +61,12 @@ const nextConfig: NextConfig = {
       ".js": [".ts", ".tsx", ".js", ".jsx"],
       ...config.resolve.extensionAlias,
     };
+    // Copy Prisma's query engine next to the server bundle (the monorepo/Next.js "engine not
+    // found" fix). Server build only.
+    if (isServer) {
+      config.plugins = config.plugins ?? [];
+      config.plugins.push(new PrismaPlugin());
+    }
     return config;
   },
 };
