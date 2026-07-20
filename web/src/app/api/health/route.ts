@@ -10,17 +10,9 @@ export async function GET() {
       { status: "ok", db: "up", time: new Date().toISOString() },
       { headers: { "Cache-Control": "no-store" } },
     );
-  } catch (e) {
-    // TEMPORARY: surface the real DB error to diagnose the Netlify deploy (revert after).
-    const err = e as Error;
+  } catch {
     return NextResponse.json(
-      {
-        status: "degraded",
-        db: "down",
-        error: err?.name ?? "Error",
-        detail: (err?.message ?? String(e)).slice(0, 400),
-        time: new Date().toISOString(),
-      },
+      { status: "degraded", db: "down", time: new Date().toISOString() },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
