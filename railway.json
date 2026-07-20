@@ -2,12 +2,10 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma && npm run build"
+    "buildCommand": "npm ci --include=dev && npx prisma generate --schema web/prisma/schema.prisma"
   },
   "deploy": {
-    "startCommand": "npm run db:migrate && npm run start:web",
-    "healthcheckPath": "/api/health",
-    "healthcheckTimeout": 30,
+    "startCommand": "npx concurrently -n market-data,market-maker,liquidation,sweeper,chain-watcher \"npx tsx services/market-data/src/index.ts\" \"npx tsx services/market-maker/src/index.ts\" \"npx tsx services/liquidation-engine/src/index.ts\" \"npx tsx services/sweeper/src/index.ts\" \"npx tsx services/chain-watcher/src/index.ts\"",
     "restartPolicyType": "ON_FAILURE",
     "numReplicas": 1
   }
