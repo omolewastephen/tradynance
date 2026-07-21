@@ -3,6 +3,75 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-21 — KYC verification (real submissions, private document storage, withdrawal gate)
+- **KYC was a status flag with nothing behind it.** Admins could set `kycStatus`, but no user could
+  ever *become* `PENDING` and there was no name/DOB/document to review — so `/admin/kyc` was
+  structurally incapable of ever having a queue. Added the missing half.
+- **`KycSubmission` model + `KycDocumentType` enum** (migration `20260721140116_kyc_submissions`):
+  identity fields, three document paths, status, rejection reason, reviewer + timestamp. Kept
+  separate from `User.kycStatus` on purpose — the submission is the *evidence and audit trail*,
+  `kycStatus` is the fast flag the withdrawal gate reads.
+- **`/settings/kyc`** (nav: "Verification") — submit legal name, DOB, address, document type/number
+  and front/back/selfie uploads. Shows current status and, when rejected, **the reason**, so the
+  user knows what to fix. Enforces 18+, blocks resubmission while `PENDING`, rate-limited.
+- **Private document storage** (`src/lib/kyc-storage.ts`, Supabase Storage): uploads go through the
+  server with the service-role key (never reaches the browser); the bucket is private and admins
+  read via **300s signed URLs**, so a forwarded link dies; object paths carry a random UUID so they
+  aren't guessable even if a user id leaks. Requires `SUPABASE_URL` +
+  `SUPABASE_SERVICE_ROLE_KEY` — **without them the feature reports itself unconfigured rather than
+  failing silently**, in both the user form and the admin page.
+- **Admin review** (`/admin/kyc` rewritten + `actions.ts`): shows the evidence with signed document
+  links; **rejection requires a reason** (≥4 chars) because the applicant sees it; the decision
+  writes submission + `User.kycStatus` in one transaction, notifies the user, and is audit-logged
+  **without document numbers or storage paths**.
+- **Withdrawals now require `VERIFIED`**, enforced server-side in the withdrawal action — not merely
+  hidden in the UI — because that's the point where value actually leaves the platform.
+- **Not compliance.** This collects and stores identity documents; it does *not* verify document
+  authenticity, do liveness/selfie matching, or screen sanctions/PEP lists. It also means the
+  platform now holds sensitive PII and needs a retention/deletion policy. See CLAUDE.md: KYC/AML
+  posture is the operator's responsibility, not something this repo solves in code.
+- Raised `serverActions.bodySizeLimit` to 8mb (6MB per document + form overhead).
+
+## 2026-07-21 — Homepage redesign, admin CRUD for launchpad/NFT, dev-copy purge, chart hardening
+- **Homepage rebuilt** with framer-motion (`components/motion/reveal.tsx`): `LazyMotion` + `m` to
+  keep the bundle at ~15kB rather than ~40kB, `viewport.once` so reveals don't re-fire, and a plain
+  `<div>` passthrough under `prefers-reduced-motion`. Hero, live market strip, stats, features,
+  steps, security, CTA.
+- **Stats deliberately exclude a volume figure.** The ticker volume we mirror is the *reference
+  market's*, not ours; showing it would imply otherwise. Only claims true of this platform.
+- **Stripped development copy leaking to users** — placeholder/TODO text visible in the live UI.
+- **Removed unsafe seeded deposit addresses**: the seed shipped a Bitcoin spec test-vector address
+  and the **ETH burn address** as live "sample" deposit addresses. Anything sent to them was
+  unrecoverable. Cleared from the seed and from the production DB.
+- **Admin CRUD for staking / launchpad / NFTs**, with safety rails over destructive edits: staking
+  products holding positions are deactivated, never deleted; launchpad allocation can't drop below
+  `soldAllocation` and projects with commitments can't be deleted; collections holding NFTs can't
+  be deleted.
+- **Change-password UI** in Settings → Security (revokes other sessions by default).
+- **Chart hardening**: candle fetch no longer waits on the chart-library import (they run in
+  parallel), and chart creation is wrapped so a failed chunk surfaces an error instead of a
+  permanent "Loading chart…".
+
+## 2026-07-20 — Production deploy: Netlify + Supabase + Railway workers; email actually delivers
+- **Email fixed — root cause was serverless, not the provider.** Zoho SMTP was configured correctly
+  and verified working from a local send, but **Netlify/Vercel run on AWS Lambda, which blocks
+  outbound SMTP (465/587)**, so a valid config silently failed in production. `email.ts` now prefers
+  **HTTP transports** — ZeptoMail → Resend → SMTP → console — and the ordering is documented in
+  `.env.example` so this isn't rediscovered later.
+- Reverted the lazy `import("@/lib/email")` added for the seed fix: dynamic imports didn't reliably
+  resolve inside Netlify's bundled function, so emails vanished with no error. `email.ts` dropped
+  `import "server-only"` instead, which fixes the seed *and* keeps the import static.
+- **Prisma on Lambda**: added `rhel-openssl-3.0.x`/`1.0.x` binary targets *and*
+  `@prisma/nextjs-monorepo-workaround-plugin` + `outputFileTracingIncludes` — the targets alone
+  weren't enough, the bundler wasn't copying the query engine, which surfaced as `db:down`.
+- **Railway runs the 5 background services** (market-data, market-maker, liquidation-engine,
+  sweeper, chain-watcher) via `concurrently`. Netlify can't host them — they're long-running and
+  stateful. Removed `healthcheckPath` from `railway.json`: workers expose no HTTP server, so the
+  healthcheck failed every deploy. **One replica only** — duplicates would double market-maker
+  orders and accrue funding twice.
+- Supabase pooled URL (6543, `pgbouncer=true&connection_limit=1`) for runtime, direct URL (5432) as
+  Prisma `directUrl` for migrations.
+
 ## 2026-07-19 — Remove blog; seed BTC/ETH sample deposit addresses; fix seed
 - **Removed the blog** (marketing `/blog` + admin `/admin/blog` + `seed-cms.ts` + the blog-only
   `markdown.ts`, plus the nav/header/footer links). Marketing-only content, not core; restorable
