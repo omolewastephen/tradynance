@@ -15,6 +15,16 @@ import nodemailer, { type Transporter } from "nodemailer";
 // .env.example.
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
+// ZeptoMail is Zoho's transactional product. Regional hosts: .com (US), .eu, .in — override with
+// ZEPTOMAIL_ENDPOINT if your account isn't on the US datacentre.
+const ZEPTOMAIL_ENDPOINT = process.env.ZEPTOMAIL_ENDPOINT ?? "https://api.zeptomail.com/v1.1/email";
+
+/** Split an `EMAIL_FROM` like `Tradynance <no-reply@x.com>` into ZeptoMail's structured form. */
+function parseFrom(from: string): { address: string; name?: string } {
+  const m = from.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (m) return { address: m[2].trim(), name: m[1].replace(/^"|"$/g, "").trim() || undefined };
+  return { address: from.trim() };
+}
 
 export interface EmailInput {
   to: string;
@@ -58,9 +68,46 @@ export async function sendEmail(
   const from = process.env.EMAIL_FROM ?? "Tradynance <onboarding@resend.dev>";
   const text = email.text ?? stripHtml(email.html);
 
-  // 1. HTTP API first. This ordering is deliberate: serverless hosts (Netlify/Vercel, i.e. AWS
+  // 1. HTTP APIs first. This ordering is deliberate: serverless hosts (Netlify/Vercel, i.e. AWS
   //    Lambda) block outbound SMTP on 465/587, so a perfectly valid SMTP config silently fails in
   //    production while working fine locally. An HTTPS send always works. Verified the hard way.
+
+  // 1a. ZeptoMail (Zoho's transactional API) — keeps everything in the Zoho ecosystem.
+  const zeptoToken = process.env.ZEPTOMAIL_TOKEN;
+  if (zeptoToken) {
+    try {
+      const sender = parseFrom(from);
+      const res = await fetch(ZEPTOMAIL_ENDPOINT, {
+        method: "POST",
+        headers: {
+          // ZeptoMail expects the literal "Zoho-enczapikey " prefix; tolerate a token that
+          // already includes it so a copy-paste from their console still works.
+          Authorization: zeptoToken.startsWith("Zoho-enczapikey")
+            ? zeptoToken
+            : `Zoho-enczapikey ${zeptoToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: { address: sender.address, name: sender.name },
+          to: [{ email_address: { address: email.to } }],
+          subject: email.subject,
+          htmlbody: email.html,
+          textbody: text,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        console.error("[email] ZeptoMail send failed", res.status, body.slice(0, 300));
+        return { ok: false, error: `ZeptoMail ${res.status}` };
+      }
+      return { ok: true };
+    } catch (err) {
+      console.error("[email] ZeptoMail send error", (err as Error).message);
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  // 1b. Resend.
   if (apiKey) {
     try {
       const res = await fetch(RESEND_ENDPOINT, {
