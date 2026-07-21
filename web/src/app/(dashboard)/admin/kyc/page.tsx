@@ -55,9 +55,9 @@ export default async function AdminKycPage() {
           <CardContent className="pt-6">
             <p className="text-sm text-warning">
               Document storage isn&apos;t configured, so users can&apos;t submit verification yet.
-              Set <span className="font-mono">SUPABASE_URL</span> and{" "}
-              <span className="font-mono">SUPABASE_SERVICE_ROLE_KEY</span>, and create a private{" "}
-              <span className="font-mono">kyc-documents</span> bucket.
+              Set <span className="font-mono">CLOUDINARY_URL</span> (or{" "}
+              <span className="font-mono">CLOUDINARY_CLOUD_NAME</span>/
+              <span className="font-mono">_API_KEY</span>/<span className="font-mono">_API_SECRET</span>).
             </p>
           </CardContent>
         </Card>

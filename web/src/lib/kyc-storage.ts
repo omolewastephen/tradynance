@@ -1,51 +1,75 @@
 import "server-only";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { v2 as cloudinary } from "cloudinary";
 
 /**
- * Storage for KYC identity documents.
+ * Storage for KYC identity documents (Cloudinary).
  *
  * These are the most sensitive objects in the system, so the rules here are deliberate:
- *  - The bucket is PRIVATE. Nothing is ever served from a public URL.
- *  - Uploads go through the server using the service-role key, which never reaches the browser.
- *  - Admins read documents through short-lived signed URLs (minutes), so a leaked link expires.
- *  - Object paths are namespaced per user and prefixed with a random id, so paths aren't guessable.
+ *  - Assets upload as `type: "private"`. Cloudinary's DEFAULT upload type is publicly readable by
+ *    anyone who has (or guesses) the URL — unacceptable for identity documents. Private assets have
+ *    no public delivery URL at all; the only way to read one is a signed download URL.
+ *  - Admins read through `private_download_url`, signed and expiring in minutes, so a link that
+ *    gets forwarded or logged stops working.
+ *  - Uploads happen server-side with the API secret, which never reaches the browser.
+ *  - Object ids are namespaced per user and carry a random UUID, so they aren't guessable.
  *
- * Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY and a private bucket named `kyc-documents`.
- * Until those are set the feature reports itself unconfigured rather than silently failing.
+ * Configure with CLOUDINARY_URL (cloudinary://<api_key>:<api_secret>@<cloud_name>) or the three
+ * discrete vars. Until then the feature reports itself unconfigured rather than silently failing.
  */
-export const KYC_BUCKET = "kyc-documents";
-
-/** Max accepted document size. Keep in sync with next.config's serverActions.bodySizeLimit. */
 export const MAX_DOC_BYTES = 6 * 1024 * 1024; // 6MB
 export const ACCEPTED_DOC_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
-let client: SupabaseClient | null | undefined;
+let configured: boolean | undefined;
 
-function storage(): SupabaseClient | null {
-  if (client !== undefined) return client;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    client = null;
-    return null;
+function configure(): boolean {
+  if (configured !== undefined) return configured;
+
+  const url = process.env.CLOUDINARY_URL;
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (url) {
+    // The SDK reads CLOUDINARY_URL from the environment on its own.
+    cloudinary.config({ secure: true });
+    configured = Boolean(cloudinary.config().api_secret);
+    return configured;
   }
-  client = createClient(url, key, { auth: { persistSession: false } });
-  return client;
+  if (cloudName && apiKey && apiSecret) {
+    cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret, secure: true });
+    configured = true;
+    return true;
+  }
+  configured = false;
+  return false;
 }
 
 export function kycStorageConfigured(): boolean {
-  return storage() !== null;
+  return configure();
 }
 
-/** Uploads one document and returns its object path (not a URL). */
+/**
+ * A stored document reference. Cloudinary needs resource_type + format + public_id to sign a
+ * download, so all three are packed into the single string column rather than adding columns.
+ */
+function encodeRef(resourceType: string, format: string, publicId: string): string {
+  return `${resourceType}|${format}|${publicId}`;
+}
+
+function decodeRef(ref: string): { resourceType: string; format: string; publicId: string } | null {
+  const parts = ref.split("|");
+  if (parts.length !== 3) return null;
+  return { resourceType: parts[0], format: parts[1], publicId: parts[2] };
+}
+
+/** Uploads one document and returns its stored reference (not a URL). */
 export async function uploadKycDocument(
   userId: string,
   kind: "front" | "back" | "selfie",
   file: File,
 ): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  const sb = storage();
-  if (!sb) return { ok: false, error: "Document storage isn't configured yet." };
+  if (!configure()) return { ok: false, error: "Document storage isn't configured yet." };
 
   if (!ACCEPTED_DOC_TYPES.includes(file.type)) {
     return { ok: false, error: "Upload a JPG, PNG, WEBP or PDF." };
@@ -54,32 +78,60 @@ export async function uploadKycDocument(
     return { ok: false, error: "Each file must be under 6MB." };
   }
 
-  const ext = file.type === "application/pdf" ? "pdf" : file.type.split("/")[1];
-  // Random segment keeps paths unguessable even if a user id leaks.
-  const path = `${userId}/${kind}-${crypto.randomUUID()}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  // Random segment keeps ids unguessable even if a user id leaks.
+  const publicId = `${kind}-${crypto.randomUUID()}`;
 
-  const { error } = await sb.storage
-    .from(KYC_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
+  try {
+    const result = await new Promise<{ public_id: string; format?: string; resource_type: string }>(
+      (resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: `kyc/${userId}`,
+            public_id: publicId,
+            type: "private", // never publicly deliverable — see the note at the top of this file
+            resource_type: "auto", // PDFs land as `image` in Cloudinary; `auto` picks correctly
+            overwrite: false,
+            invalidate: false,
+          },
+          (error, res) => {
+            if (error || !res) reject(new Error(error?.message ?? "Upload failed"));
+            else resolve(res as { public_id: string; format?: string; resource_type: string });
+          },
+        );
+        stream.end(buffer);
+      },
+    );
 
-  if (error) {
-    console.error("[kyc] upload failed", error.message);
-    // TEMPORARY DIAGNOSTIC — surfaces the storage provider's reason (bucket missing, bad key, RLS)
-    // because Netlify function logs aren't readily greppable. Revert to the generic message once
-    // the bucket is confirmed working; users should never see provider internals.
-    return { ok: false, error: `Storage rejected the upload: ${error.message}` };
+    const format = result.format ?? (file.type === "application/pdf" ? "pdf" : file.type.split("/")[1]);
+    return { ok: true, path: encodeRef(result.resource_type, format, result.public_id) };
+  } catch (err) {
+    console.error("[kyc] upload failed", (err as Error).message);
+    return { ok: false, error: "Could not store the document. Try again." };
   }
-  return { ok: true, path };
 }
 
 /** Short-lived signed URL so a compliance reviewer can view a document. */
-export async function signedDocumentUrl(path: string, expiresInSeconds = 300): Promise<string | null> {
-  const sb = storage();
-  if (!sb) return null;
-  const { data, error } = await sb.storage.from(KYC_BUCKET).createSignedUrl(path, expiresInSeconds);
-  if (error) {
-    console.error("[kyc] signed url failed", error.message);
+export async function signedDocumentUrl(
+  ref: string,
+  expiresInSeconds = 300,
+): Promise<string | null> {
+  if (!configure()) return null;
+
+  const decoded = decodeRef(ref);
+  if (!decoded) {
+    console.error("[kyc] unrecognised document reference");
     return null;
   }
-  return data.signedUrl;
+
+  try {
+    return cloudinary.utils.private_download_url(decoded.publicId, decoded.format, {
+      resource_type: decoded.resourceType,
+      type: "private",
+      expires_at: Math.floor(Date.now() / 1000) + expiresInSeconds,
+    });
+  } catch (err) {
+    console.error("[kyc] signed url failed", (err as Error).message);
+    return null;
+  }
 }
