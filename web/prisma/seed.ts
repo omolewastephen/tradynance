@@ -4,12 +4,9 @@ import { seedAssets } from "./seed-assets";
 import { seedMarkets } from "./seed-markets";
 import { seedTickers } from "./seed-tickers";
 import { seedMarketMaker } from "./seed-market-maker";
-import { seedStaking } from "./seed-staking";
-import { seedLaunchpad } from "./seed-launchpad";
-import { seedNft } from "./seed-nft";
 
 async function upsertAdmin() {
-  const email = "admin@tradynance.local";
+  const email = "admin@tradynance.com";
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     console.log(`[seed] admin already exists: ${email}`);
@@ -45,10 +42,10 @@ async function main() {
   await seedAssets();
   await seedMarkets();
   await seedTickers(); // static fallback prices; market-data overwrites with live once running
+  // Market-maker liquidity is kept: without resting orders the spot book is empty and no order
+  // can fill. Staking / launchpad / NFT demo records are intentionally NOT seeded — that content
+  // should be real, added deliberately, not shipped as placeholder data.
   await seedMarketMaker();
-  await seedStaking();
-  await seedLaunchpad();
-  await seedNft();
 }
 
 main()

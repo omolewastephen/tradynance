@@ -1,5 +1,6 @@
-import "server-only";
-
+// NB: deliberately NOT `import "server-only"`. This module is imported by src/lib/auth.ts, which
+// `prisma db seed` (tsx) also imports — server-only throws outside Next's bundler and broke the
+// seed. It's server-safe regardless: nodemailer is Node-only, so a client bundle would fail loudly.
 import nodemailer, { type Transporter } from "nodemailer";
 
 // Transactional email. Three transports, picked by which credentials are present, in order:
