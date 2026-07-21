@@ -26,6 +26,21 @@ function parseFrom(from: string): { address: string; name?: string } {
   return { address: from.trim() };
 }
 
+export type EmailTransport = "zeptomail" | "resend" | "smtp" | "console";
+
+/**
+ * Which transport a send would use right now, given the env. Exposed on /api/health because the
+ * failure mode this catches is silent: with no credentials set, sends fall through to `console`
+ * and still report success, so registration "works" while no verification email ever leaves.
+ * Names only — never credentials.
+ */
+export function emailTransport(): EmailTransport {
+  if (process.env.ZEPTOMAIL_TOKEN) return "zeptomail";
+  if (process.env.RESEND_API_KEY) return "resend";
+  if (process.env.SMTP_HOST) return "smtp";
+  return "console";
+}
+
 export interface EmailInput {
   to: string;
   subject: string;
@@ -146,7 +161,16 @@ export async function sendEmail(
     }
   }
 
-  // 3. No transport configured — log so dev flows stay testable.
+  // 3. No transport configured — log so dev flows stay testable. In production this is a fault,
+  //    not a fallback: every verification/reset/OTP is being dropped while callers see success.
+  //    Kept non-throwing (a hard failure would break registration outright) but logged loudly, and
+  //    surfaced on /api/health so it's visible without reading logs.
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      `[email] NO TRANSPORT CONFIGURED — dropped "${email.subject}" to ${email.to}. ` +
+        `Set ZEPTOMAIL_TOKEN or RESEND_API_KEY in the deployment environment.`,
+    );
+  }
   console.log(`[email] (no RESEND_API_KEY / SMTP_HOST) → ${email.to} | ${email.subject}`);
   console.log(`[email] ${text}`);
   return { ok: true };
