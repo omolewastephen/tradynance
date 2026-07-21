@@ -36,8 +36,8 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <p className="text-sm text-foreground-muted">
-        If an account exists for that email, a password reset link is on its way. In local
-        development it&apos;s logged to the server console instead of emailed.
+        If an account exists for that email, a password reset link is on its way. The link
+        expires shortly — if it doesn&apos;t arrive within a few minutes, check your spam folder.
       </p>
     );
   }

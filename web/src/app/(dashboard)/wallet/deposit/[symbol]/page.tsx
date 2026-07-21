@@ -128,8 +128,8 @@ export default async function DepositPage({
 
               {selected.requiresMemo && (
                 <p className="rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
-                  This network requires a memo/tag. Sending without it may cause loss of
-                  funds. (Memo handling lands with the {selected.network} integration.)
+                  This network requires a memo/tag. You must include the memo shown above when
+                  sending — a transfer without it may be unrecoverable.
                 </p>
               )}
 

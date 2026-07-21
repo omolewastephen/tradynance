@@ -10,8 +10,9 @@ type SeedNetwork = {
   withdrawalFee: string;
   requiresMemo?: boolean;
   contractAddress?: string;
-  // Central/shared deposit address shown to every user (the shared-custodial model). Seeded only
-  // for BTC + ETH as SAMPLES — replace them, and fill in the other coins, from Admin → Assets.
+  // Central/shared deposit address shown to every user (the shared-custodial model). NEVER seed a
+  // placeholder here — a wrong address silently destroys user funds. Set real custody addresses
+  // deliberately from Admin → Assets.
   depositAddress?: string;
 };
 
@@ -32,8 +33,6 @@ const ASSETS: SeedAsset[] = [
         network: "BTC_TESTNET",
         minDeposit: "0.0001",
         withdrawalFee: "0.00005",
-        // SAMPLE testnet address — replace with your real custody address in Admin → Assets.
-        depositAddress: "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
       },
     ],
   },
@@ -46,8 +45,6 @@ const ASSETS: SeedAsset[] = [
         network: "ETH_SEPOLIA",
         minDeposit: "0.001",
         withdrawalFee: "0.0005",
-        // SAMPLE address — replace with your real custody address in Admin → Assets.
-        depositAddress: "0x000000000000000000000000000000000000dEaD",
       },
     ],
   },

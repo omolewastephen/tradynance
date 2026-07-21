@@ -21,9 +21,12 @@ export default function CheckEmailPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-foreground-muted">
-            In local development, the verification link is logged to the server console
-            instead of being emailed — see the `sendVerificationEmail` TODO in
-            `src/lib/auth.ts`.
+            The link expires shortly for your security. If it doesn&apos;t arrive within a few
+            minutes, check your spam folder — or{" "}
+            <Link href="/contact" className="text-accent hover:underline">
+              contact support
+            </Link>{" "}
+            and we&apos;ll help you get set up.
           </p>
         </CardContent>
       </Card>

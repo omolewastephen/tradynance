@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AntiPhishingForm } from "./anti-phishing-form";
+import { ChangePasswordSection } from "./change-password-section";
 import { TwoFactorSection } from "./two-factor-section";
 import { SessionsSection } from "./sessions-section";
 import { WhitelistSection } from "./whitelist-section";
@@ -32,6 +33,19 @@ export default async function SecuritySettingsPage() {
   return (
     <div className="flex animate-fade-rise flex-col gap-6">
       <h1 className="font-display text-h1">Security</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Password</CardTitle>
+          <CardDescription>
+            Change the password you use to sign in. We recommend signing out other devices when
+            you update it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordSection />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
