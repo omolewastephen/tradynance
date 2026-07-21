@@ -13,6 +13,7 @@ import {
   Rocket,
   Image as ImageIcon,
   ShieldCheck,
+  BadgeCheck,
   ShieldQuestion,
   ScrollText,
   Landmark,
@@ -46,6 +47,7 @@ export const mainSection: NavSection = {
     { href: "/launchpad", label: "Launchpad", icon: Rocket },
     { href: "/nft", label: "NFT", icon: ImageIcon },
     { href: "/vip", label: "VIP", icon: Crown },
+    { href: "/settings/kyc", label: "Verification", icon: BadgeCheck },
     { href: "/settings/security", label: "Security", icon: ShieldCheck },
   ],
 };

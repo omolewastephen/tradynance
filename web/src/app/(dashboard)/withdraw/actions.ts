@@ -58,11 +58,30 @@ export async function requestWithdrawal(formData: FormData): Promise<RequestResu
   const network = asset?.networks[0];
   if (!asset || !network) return { ok: false, error: "Unknown asset or network" };
 
-  // Whitelist enforcement.
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: session.user.id },
-    select: { withdrawalWhitelistOnly: true, twoFactorEnabled: true, email: true, antiPhishingCode: true },
+    select: {
+      withdrawalWhitelistOnly: true,
+      twoFactorEnabled: true,
+      email: true,
+      antiPhishingCode: true,
+      kycStatus: true,
+    },
   });
+
+  // KYC gate. Enforced server-side here (not just hidden in the UI) because this is the point
+  // where value actually leaves the platform.
+  if (user.kycStatus !== "VERIFIED") {
+    const reason =
+      user.kycStatus === "PENDING"
+        ? "Your identity verification is still under review. Withdrawals unlock once it's approved."
+        : user.kycStatus === "REJECTED"
+          ? "Your identity verification wasn't approved. Please resubmit it before withdrawing."
+          : "Verify your identity before withdrawing funds.";
+    return { ok: false, error: reason };
+  }
+
+  // Whitelist enforcement.
   if (user.withdrawalWhitelistOnly) {
     const whitelisted = await prisma.withdrawalWhitelist.findFirst({
       where: {

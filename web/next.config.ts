@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
   // Force Prisma's native query engine (.node binary) into every server bundle. Netlify's bundler
   // doesn't detect it on its own → "Query Engine could not be located for rhel-openssl-3.0.x" at
   // runtime (db:down). Belt-and-suspenders with the PrismaPlugin in webpack() below.
+  // KYC document uploads post files through a server action; the default 1MB cap would reject a
+  // normal phone photo of an ID. Keep in sync with MAX_DOC_BYTES in src/lib/kyc-storage.ts.
+  experimental: { serverActions: { bodySizeLimit: "8mb" } },
+
   outputFileTracingIncludes: {
     "**": ["../packages/core/generated/prisma/**/*.node"],
   },

@@ -59,6 +59,47 @@ enum UserStatus {
   BANNED
 }
 
+enum KycDocumentType {
+  PASSPORT
+  NATIONAL_ID
+  DRIVERS_LICENSE
+  RESIDENCE_PERMIT
+}
+
+/// What a compliance reviewer actually assesses. `User.kycStatus` stays the fast flag the rest of
+/// the app checks (e.g. the withdrawal gate); this holds the evidence behind it. Submissions are
+/// kept as history — a rejected attempt is never overwritten by a resubmission, so there's an
+/// audit trail of what was reviewed and why.
+model KycSubmission {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  legalName      String
+  dateOfBirth    DateTime
+  addressLine    String
+  city           String
+  postalCode     String
+  country        String
+  documentType   KycDocumentType
+  documentNumber String
+
+  /// Object paths inside the PRIVATE `kyc-documents` bucket — never public URLs. Identity
+  /// documents are among the most sensitive data here; admins view them via short-lived signed
+  /// URLs so the objects are never world-readable.
+  frontPath  String
+  backPath   String?
+  selfiePath String?
+
+  status          KycStatus @default(PENDING)
+  rejectionReason String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
 enum KycStatus {
   UNVERIFIED
   PENDING
@@ -99,6 +140,7 @@ model User {
   deposits            Deposit[]
   withdrawals         Withdrawal[]
   withdrawalWhitelist WithdrawalWhitelist[]
+  kycSubmissions      KycSubmission[]
   orders              Order[]
   conversions         Conversion[]
   auditLogs           AuditLog[]
