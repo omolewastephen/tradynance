@@ -19,6 +19,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
   const [interval, setInterval] = useState<Interval>("1h");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [candles, setCandles] = useState<CandlestickData[] | null>(null);
 
   // create chart once (dynamic import → separate chunk)
   useEffect(() => {
@@ -26,29 +27,38 @@ export function PriceChart({ symbol }: { symbol: string }) {
     let disposed = false;
     let chart: IChartApi | null = null;
     (async () => {
-      const { createChart, CandlestickSeries } = await import("lightweight-charts");
-      if (disposed || !containerRef.current) return;
-      chart = createChart(containerRef.current, {
-        layout: { background: { color: "transparent" }, textColor: "#8a93a6", fontFamily: "var(--font-mono)" },
-        grid: {
-          vertLines: { color: "rgba(255,255,255,0.04)" },
-          horzLines: { color: "rgba(255,255,255,0.04)" },
-        },
-        rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
-        timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true },
-        autoSize: true,
-        crosshair: { mode: 0 },
-      });
-      const series = chart.addSeries(CandlestickSeries, {
-        upColor: "#18c964",
-        downColor: "#ef4444",
-        borderVisible: false,
-        wickUpColor: "#18c964",
-        wickDownColor: "#ef4444",
-      });
-      chartRef.current = chart;
-      seriesRef.current = series;
-      setReady(true);
+      try {
+        const { createChart, CandlestickSeries } = await import("lightweight-charts");
+        if (disposed || !containerRef.current) return;
+        chart = createChart(containerRef.current, {
+          layout: { background: { color: "transparent" }, textColor: "#8a93a6", fontFamily: "var(--font-mono)" },
+          grid: {
+            vertLines: { color: "rgba(255,255,255,0.04)" },
+            horzLines: { color: "rgba(255,255,255,0.04)" },
+          },
+          rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
+          timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true },
+          autoSize: true,
+          crosshair: { mode: 0 },
+        });
+        const series = chart.addSeries(CandlestickSeries, {
+          upColor: "#18c964",
+          downColor: "#ef4444",
+          borderVisible: false,
+          wickUpColor: "#18c964",
+          wickDownColor: "#ef4444",
+        });
+        chartRef.current = chart;
+        seriesRef.current = series;
+        setReady(true);
+      } catch {
+        // Without this the chunk failing (or a chart API change) left `ready` false forever, so the
+        // component sat on "Loading chart…" with no error — indistinguishable from a hung page.
+        if (!disposed) {
+          setError(true);
+          setLoading(false);
+        }
+      }
     })();
     return () => {
       disposed = true;
@@ -58,19 +68,19 @@ export function PriceChart({ symbol }: { symbol: string }) {
     };
   }, []);
 
-  // load candles when ready / symbol / interval changes
+  // Fetch candles for the current symbol/interval. Deliberately NOT gated on `ready`: the request
+  // starts immediately, in parallel with the chart library's dynamic import, instead of waiting for
+  // it — that serialization cost several seconds and made the chart look hung. The result is held
+  // until the series exists, then drawn by the effect below.
   useEffect(() => {
-    if (!ready) return;
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setCandles(null);
     fetch(`/api/markets/${symbol}/klines?interval=${interval}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: { candles: CandlestickData[] }) => {
-        if (cancelled || !seriesRef.current) return;
-        seriesRef.current.setData(data.candles);
-        chartRef.current?.timeScale().fitContent();
-        setLoading(false);
+        if (!cancelled) setCandles(data.candles);
       })
       .catch(() => {
         if (!cancelled) {
@@ -81,7 +91,15 @@ export function PriceChart({ symbol }: { symbol: string }) {
     return () => {
       cancelled = true;
     };
-  }, [ready, symbol, interval]);
+  }, [symbol, interval]);
+
+  // Draw once both the series and the candles are available, whichever finishes last.
+  useEffect(() => {
+    if (!ready || !candles || !seriesRef.current) return;
+    seriesRef.current.setData(candles);
+    chartRef.current?.timeScale().fitContent();
+    setLoading(false);
+  }, [ready, candles]);
 
   return (
     <div className="flex flex-col gap-2">
