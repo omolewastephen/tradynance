@@ -7,7 +7,12 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "rounded-md border border-border-subtle bg-surface text-foreground",
+        // Slightly larger radius + a hairline top highlight reads as a lifted surface rather than
+        // a flat outlined box — the difference between "bootstrap card" and a considered panel.
+        // Elevation is deliberately subtle (shadow-elevation-1) so dense screens stay calm.
+        "rounded-lg border border-border-subtle bg-surface text-foreground shadow-elevation-1",
+        "relative before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px",
+        "before:rounded-t-lg before:bg-gradient-to-r before:from-transparent before:via-white/[0.06] before:to-transparent",
         className,
       )}
       {...props}

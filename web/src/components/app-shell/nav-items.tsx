@@ -60,6 +60,8 @@ export const adminSection: NavSection = {
     { href: "/admin/assets", label: "Assets", icon: Boxes },
     { href: "/admin/treasury", label: "Treasury", icon: Vault },
     { href: "/admin/staking", label: "Staking", icon: Coins },
+    { href: "/admin/launchpad", label: "Launchpad", icon: Rocket },
+    { href: "/admin/nft", label: "NFTs", icon: ImageIcon },
     { href: "/admin/kyc", label: "KYC review", icon: ShieldQuestion },
     { href: "/admin/deposits", label: "Deposits", icon: Landmark },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Banknote },
