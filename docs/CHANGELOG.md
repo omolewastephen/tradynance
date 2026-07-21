@@ -3,6 +3,29 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-21 — Fix: production sent no email at all; KYC documents moved to Cloudinary
+- **Registration and reset emails were never being sent.** `/api/health` now reports the active
+  transport, which showed `email: "smtp"`: `SMTP_HOST` was set in Netlify but neither HTTP key was,
+  so every send took the SMTP path — **blocked on Lambda** — and failed. Confirmed against Resend's
+  API: the account had received *zero* application emails, ever. Fixed by setting `RESEND_API_KEY`
+  in Netlify; verified a real reset arriving (`delivered`) and a real signup verification too.
+- **Netlify env vars need a redeploy to reach functions.** Setting them isn't enough — this cost
+  time twice (Supabase, then Resend). Noted here so it isn't rediscovered a third time.
+- **`/api/health` now reports subsystems** (`email` transport name, `kycStorage` boolean). Both
+  fail *silently* otherwise — the email chain ends in a console fallback that returns success, so
+  the app cheerfully reports "sent" while dropping everything. A missing transport now also logs an
+  error in production. Names and booleans only, never credentials.
+- **KYC documents now live on Cloudinary**, not Supabase Storage (the bucket rejected every upload).
+  Uploaded as **`type: "private"`** — Cloudinary's *default* upload type is publicly readable by
+  anyone with the URL, which is unacceptable for identity documents. Private assets have no public
+  delivery URL; admins read them via `private_download_url`, signed and expiring in 300s. Dropped
+  `@supabase/supabase-js` (KYC was its only consumer).
+- Checked and dismissed: 502s + a stuck login button seen during testing were **deploy turbulence**,
+  not a defect. On a settled site the login form hydrates in ~0.5s with no failed requests.
+- Known, unfixed: the CSP blocks Cloudflare's injected analytics beacon
+  (`static.cloudflareinsights.com`), so Cloudflare Web Analytics records nothing. Left alone
+  deliberately — better to disable the injection in Cloudflare than to loosen the CSP.
+
 ## 2026-07-21 — KYC verification (real submissions, private document storage, withdrawal gate)
 - **KYC was a status flag with nothing behind it.** Admins could set `kycStatus`, but no user could
   ever *become* `PENDING` and there was no name/DOB/document to review — so `/admin/kyc` was
