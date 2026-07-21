@@ -56,8 +56,32 @@ export async function sendEmail(
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM ?? "Tradynance <onboarding@resend.dev>";
+  const text = email.text ?? stripHtml(email.html);
 
-  // 1. SMTP (Zoho / any provider) takes precedence when configured.
+  // 1. HTTP API first. This ordering is deliberate: serverless hosts (Netlify/Vercel, i.e. AWS
+  //    Lambda) block outbound SMTP on 465/587, so a perfectly valid SMTP config silently fails in
+  //    production while working fine locally. An HTTPS send always works. Verified the hard way.
+  if (apiKey) {
+    try {
+      const res = await fetch(RESEND_ENDPOINT, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from, to: email.to, subject: email.subject, html: email.html, text }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        console.error("[email] HTTP send failed", res.status, body);
+        return { ok: false, error: `Resend ${res.status}` };
+      }
+      const data = (await res.json()) as { id?: string };
+      return { ok: true, id: data.id };
+    } catch (err) {
+      console.error("[email] HTTP send error", (err as Error).message);
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  // 2. SMTP fallback — fine on a VPS/Docker/Railway (long-lived Node), not on serverless.
   const transport = getSmtpTransport();
   if (transport) {
     try {
@@ -66,7 +90,7 @@ export async function sendEmail(
         to: email.to,
         subject: email.subject,
         html: email.html,
-        text: email.text ?? stripHtml(email.html),
+        text,
       });
       return { ok: true, id: info.messageId };
     } catch (err) {
@@ -75,35 +99,10 @@ export async function sendEmail(
     }
   }
 
-  if (!apiKey) {
-    console.log(`[email] (dev, no SMTP_HOST / RESEND_API_KEY) → ${email.to} | ${email.subject}`);
-    console.log(`[email] ${email.text ?? stripHtml(email.html)}`);
-    return { ok: true };
-  }
-
-  try {
-    const res = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to: email.to,
-        subject: email.subject,
-        html: email.html,
-        text: email.text ?? stripHtml(email.html),
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      console.error("[email] send failed", res.status, body);
-      return { ok: false, error: `Resend ${res.status}` };
-    }
-    const data = (await res.json()) as { id?: string };
-    return { ok: true, id: data.id };
-  } catch (err) {
-    console.error("[email] send error", (err as Error).message);
-    return { ok: false, error: (err as Error).message };
-  }
+  // 3. No transport configured — log so dev flows stay testable.
+  console.log(`[email] (no RESEND_API_KEY / SMTP_HOST) → ${email.to} | ${email.subject}`);
+  console.log(`[email] ${text}`);
+  return { ok: true };
 }
 
 // ── Branded template (inline styles — email clients ignore <style>/external CSS) ──────────────
