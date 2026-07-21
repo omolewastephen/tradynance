@@ -64,7 +64,10 @@ export async function uploadKycDocument(
 
   if (error) {
     console.error("[kyc] upload failed", error.message);
-    return { ok: false, error: "Could not store the document. Try again." };
+    // TEMPORARY DIAGNOSTIC — surfaces the storage provider's reason (bucket missing, bad key, RLS)
+    // because Netlify function logs aren't readily greppable. Revert to the generic message once
+    // the bucket is confirmed working; users should never see provider internals.
+    return { ok: false, error: `Storage rejected the upload: ${error.message}` };
   }
   return { ok: true, path };
 }
