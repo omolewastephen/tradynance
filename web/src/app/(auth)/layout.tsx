@@ -1,19 +1,94 @@
 import Link from "next/link";
+import { ScrollText, ShieldCheck, Layers } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
+import { prisma } from "@/lib/prisma";
+import {
+  getAuthMarkets,
+  MarketRailList,
+  MarketRailStrip,
+} from "@/components/auth/market-rail";
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+const POINTS: { icon: typeof ScrollText; text: string }[] = [
+  { icon: ScrollText, text: "Append-only ledger — the books always reconcile" },
+  { icon: ShieldCheck, text: "2FA, anti-phishing codes and withdrawal whitelists" },
+  { icon: Layers, text: "Spot, futures, staking and convert in one account" },
+];
+
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  // One query, shared by the desktop panel and the mobile strip. Counts are factual platform
+  // figures (no fabricated volume — same principle as the marketing home).
+  const [rows, assetCount, marketCount] = await Promise.all([
+    getAuthMarkets(),
+    prisma.asset.count().catch(() => 0),
+    prisma.market.count({ where: { isActive: true } }).catch(() => 0),
+  ]);
+
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background p-6">
-      {/* subtle brand ambient glow behind the auth card */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/3 size-[32rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
-      />
-      <Link href="/" className="relative z-10 mb-6" aria-label="Tradynance home">
-        <Logo />
-      </Link>
-      <div className="relative z-10 w-full max-w-md">{children}</div>
+    <div className="grid min-h-dvh lg:grid-cols-[1.05fr_0.95fr]">
+      {/* ── Brand + live-market panel (desktop only) ── */}
+      <aside className="relative hidden overflow-hidden border-r border-border-subtle bg-background lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-14">
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-brand-glow" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
+
+        <div className="relative z-10">
+          <Link href="/" aria-label="Tradynance home">
+            <Logo size="lg" />
+          </Link>
+        </div>
+
+        <div className="relative z-10 max-w-md">
+          <h2 className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground xl:text-5xl">
+            Trade digital assets, <span className="text-gradient-brand">elevated.</span>
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-foreground-muted">
+            A fast, secure exchange built on an append-only ledger. Spot, futures, staking and
+            convert — one account, correct by design.
+          </p>
+          <ul className="mt-8 flex flex-col gap-3.5">
+            {POINTS.map((p) => (
+              <li key={p.text} className="flex items-center gap-3 text-sm text-foreground">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-primary-muted text-primary">
+                  <p.icon className="size-4" />
+                </span>
+                {p.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="relative z-10">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
+              <span className="size-1.5 animate-pulse rounded-full bg-primary" /> Live markets
+            </span>
+            {assetCount > 0 && (
+              <span className="font-mono text-xs tabular-nums text-foreground-subtle">
+                {assetCount} assets · {marketCount} markets
+              </span>
+            )}
+          </div>
+          <MarketRailList rows={rows} />
+        </div>
+      </aside>
+
+      {/* ── Form column ── */}
+      <main className="relative flex min-h-dvh flex-col bg-surface/20">
+        {/* Mobile brand bar (the panel is hidden < lg). */}
+        <div className="flex items-center px-5 pt-6 lg:hidden">
+          <Link href="/" aria-label="Tradynance home">
+            <Logo />
+          </Link>
+        </div>
+
+        <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-8">
+          <div className="mx-auto w-full max-w-md">
+            {children}
+            {/* Mobile-only live strip — keeps the small screen contentful without the full panel. */}
+            <MarketRailStrip rows={rows} className="mt-8 lg:hidden" />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

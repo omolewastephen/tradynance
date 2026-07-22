@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getCurrentSession } from "@/lib/auth-session";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in — Tradynance" };
@@ -18,21 +17,22 @@ export default async function LoginPage() {
   if (session) redirect("/dashboard");
 
   return (
-    <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="font-display text-h3">Sign in</CardTitle>
-          <CardDescription>
-            New to Tradynance?{" "}
-            <Link href="/register" className="text-accent hover:underline">
-              Create an account
-            </Link>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={null}>
-            <LoginForm />
-          </Suspense>
-        </CardContent>
-      </Card>
+    <div>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+        Welcome back
+      </h1>
+      <p className="mt-2 text-sm text-foreground-muted">
+        New to Tradynance?{" "}
+        <Link href="/register" className="font-medium text-accent hover:underline">
+          Create an account
+        </Link>
+      </p>
+
+      <div className="mt-8">
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
+      </div>
+    </div>
   );
 }
