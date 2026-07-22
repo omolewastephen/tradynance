@@ -27,7 +27,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_0.95fr]">
       {/* ── Brand + live-market panel (desktop only) ── */}
-      <aside className="relative hidden overflow-hidden border-r border-border-subtle bg-background lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-14">
+      <aside className="relative hidden min-w-0 overflow-hidden border-r border-border-subtle bg-background lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-14">
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-brand-glow" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
 
@@ -73,7 +73,11 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       </aside>
 
       {/* ── Form column ── */}
-      <main className="relative flex min-h-dvh flex-col bg-surface/20">
+      {/* min-w-0: grid items default to min-width:auto and refuse to shrink below their content's
+          intrinsic width — the no-wrap ticker strip (~448px) was forcing the whole column, and the
+          page, wider than a phone viewport. min-w-0 lets the column track the viewport so the
+          strip's own overflow-x-auto actually engages. */}
+      <main className="relative flex min-h-dvh min-w-0 flex-col bg-surface/20">
         {/* Mobile brand bar (the panel is hidden < lg). */}
         <div className="flex items-center px-5 pt-6 lg:hidden">
           <Link href="/" aria-label="Tradynance home">
