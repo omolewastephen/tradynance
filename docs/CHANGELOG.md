@@ -3,6 +3,28 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-22 — Auth redesign, brand favicon, KYC verified end-to-end
+- **Login & register redesigned** into a split-screen shell (`(auth)/layout.tsx`): a graphical brand
+  panel (gradient headline, trust points, and a **live market list from the real Ticker cache** with
+  factual asset/market counts — no fabricated volume) beside a clean, focused form. One ticker query
+  is shared by the desktop panel and the mobile strip. Fully responsive: the panel is desktop-only,
+  mobile gets the logo, form (top-aligned for thumb reach) and a horizontal live strip. Server-
+  rendered tickers + CSS effects keep it fast — no chart libs, minimal client JS. Verified by
+  screenshot in **light and dark**, desktop and mobile, on both pages.
+- **Fixed a real logo bug found during review:** `LogoMark` used a fixed gradient id, so with two
+  logos in the DOM (the `hidden lg:flex` panel + the mobile bar) every `url(#id)` resolved to the
+  first — which sits in a `display:none` container and never paints — blanking the visible mark on
+  mobile. Now a per-instance id via `useId`. Fixes the class of bug anywhere the logo repeats.
+- **KYC verified end-to-end in production** (submit → private Cloudinary storage → admin signed-link
+  review → approve → withdrawal unlock). The submit had 500'd: `kyc-storage.ts` used the **global**
+  `crypto.randomUUID()`, absent in Netlify's function runtime even on Node 20, and outside the
+  try/catch → unhandled. Switched to `import { randomUUID } from "node:crypto"` (the convention every
+  other action already follows). Also verified the Cloudinary path directly first (private upload,
+  signed-URL read, public-URL blocked, cleanup) before touching production.
+- **Favicon is the Tradynance mark**, not the Next scaffold default: generated `favicon.ico`
+  (16/32/48), `icon.svg`, and `apple-icon.png` from the brand logo via sharp; removed the leftover
+  `vercel.svg`/`next.svg`/etc. Confirmed live (served bytes changed).
+
 ## 2026-07-21 — Fix: production sent no email at all; KYC documents moved to Cloudinary
 - **Registration and reset emails were never being sent.** `/api/health` now reports the active
   transport, which showed `email: "smtp"`: `SMTP_HOST` was set in Netlify but neither HTTP key was,

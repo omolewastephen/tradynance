@@ -88,6 +88,15 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             <MarketRailStrip rows={rows} className="mt-8 lg:hidden" />
           </div>
         </div>
+
+        <footer className="px-5 pb-6 sm:px-8">
+          <div className="mx-auto flex w-full max-w-md items-center justify-between text-xs text-foreground-subtle">
+            <span>© {new Date().getFullYear()} Tradynance</span>
+            <Link href="/contact" className="transition-colors hover:text-foreground-muted">
+              Need help?
+            </Link>
+          </div>
+        </footer>
       </main>
     </div>
   );
