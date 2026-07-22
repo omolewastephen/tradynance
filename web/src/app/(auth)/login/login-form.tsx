@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
 import { loginSchema, totpSchema, type LoginInput, type TotpInput } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Controller } from "react-hook-form";
@@ -29,11 +31,13 @@ export function LoginForm() {
 
   const credentialsForm = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    mode: "onTouched", // validate on blur — errors appear when the user leaves a field, not on submit only
     defaultValues: { email: "", password: "", rememberMe: true },
   });
 
   const totpForm = useForm<TotpInput>({
     resolver: zodResolver(totpSchema),
+    mode: "onTouched",
     defaultValues: { code: "", trustDevice: false },
   });
 
@@ -87,7 +91,10 @@ export function LoginForm() {
           Enter the 6-digit code from your authenticator app.
         </p>
         {serverError && (
-          <p className="rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+          <p
+            role="alert"
+            className="rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger"
+          >
             {serverError}
           </p>
         )}
@@ -98,11 +105,14 @@ export function LoginForm() {
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            className="font-mono tracking-[0.3em]"
+            autoFocus
+            aria-invalid={!!totpForm.formState.errors.code}
+            aria-describedby={totpForm.formState.errors.code ? "code-error" : undefined}
+            className="h-11 font-mono tracking-[0.3em]"
             {...totpForm.register("code")}
           />
           {totpForm.formState.errors.code && (
-            <p className="text-xs text-danger">
+            <p id="code-error" role="alert" className="text-xs text-danger">
               {totpForm.formState.errors.code.message}
             </p>
           )}
@@ -123,7 +133,12 @@ export function LoginForm() {
             Trust this device for 30 days
           </Label>
         </div>
-        <Button type="submit" disabled={!hydrated || totpForm.formState.isSubmitting}>
+        <Button
+          type="submit"
+          disabled={!hydrated || totpForm.formState.isSubmitting}
+          className="h-11"
+        >
+          {totpForm.formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
           {totpForm.formState.isSubmitting ? "Verifying…" : "Verify"}
         </Button>
       </form>
@@ -136,7 +151,10 @@ export function LoginForm() {
       className="flex flex-col gap-4"
     >
       {serverError && (
-        <p className="rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p
+          role="alert"
+          className="rounded-sm border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger"
+        >
           {serverError}
         </p>
       )}
@@ -146,10 +164,13 @@ export function LoginForm() {
           id="email"
           type="email"
           autoComplete="email"
+          aria-invalid={!!credentialsForm.formState.errors.email}
+          aria-describedby={credentialsForm.formState.errors.email ? "email-error" : undefined}
+          className="h-11"
           {...credentialsForm.register("email")}
         />
         {credentialsForm.formState.errors.email && (
-          <p className="text-xs text-danger">
+          <p id="email-error" role="alert" className="text-xs text-danger">
             {credentialsForm.formState.errors.email.message}
           </p>
         )}
@@ -161,14 +182,16 @@ export function LoginForm() {
             Forgot password?
           </a>
         </div>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
+          aria-invalid={!!credentialsForm.formState.errors.password}
+          aria-describedby={credentialsForm.formState.errors.password ? "password-error" : undefined}
+          className="h-11"
           {...credentialsForm.register("password")}
         />
         {credentialsForm.formState.errors.password && (
-          <p className="text-xs text-danger">
+          <p id="password-error" role="alert" className="text-xs text-danger">
             {credentialsForm.formState.errors.password.message}
           </p>
         )}
@@ -192,8 +215,9 @@ export function LoginForm() {
       <Button
         type="submit"
         disabled={!hydrated || credentialsForm.formState.isSubmitting}
-        className="mt-1"
+        className="mt-1 h-11 shadow-glow"
       >
+        {credentialsForm.formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
         {credentialsForm.formState.isSubmitting ? "Signing in…" : "Sign in"}
       </Button>
     </form>

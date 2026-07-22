@@ -38,9 +38,12 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         </div>
 
         <div className="relative z-10 max-w-md">
-          <h2 className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground xl:text-5xl">
+          {/* Deliberately a <p>, not a heading: this is brand copy. The page's real title is the
+              form's <h1> ("Welcome back" / "Create your account") — a decorative h2 before it broke
+              the document outline for screen-reader users. */}
+          <p className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground xl:text-5xl">
             Trade digital assets, <span className="text-gradient-brand">elevated.</span>
-          </h2>
+          </p>
           <p className="mt-4 text-base leading-relaxed text-foreground-muted">
             A fast, secure exchange built on an append-only ledger. Spot, futures, staking and
             convert — one account, correct by design.
