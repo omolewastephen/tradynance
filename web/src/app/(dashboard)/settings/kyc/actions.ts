@@ -33,10 +33,10 @@ export async function submitKyc(formData: FormData): Promise<SubmitResult> {
   try {
     return await submitKycInner(formData);
   } catch (err) {
-    // TEMPORARY DIAGNOSTIC — an unhandled throw here otherwise shows the generic 500 boundary with
-    // no cause. Surface it so a failing submit is diagnosable, then revert to a generic message.
+    // An unhandled throw here would otherwise surface as the generic 500 boundary; log the cause
+    // server-side and return a clean, non-leaking message to the user.
     console.error("[kyc] submit threw:", (err as Error).stack ?? (err as Error).message);
-    return { ok: false, error: `submit failed: ${(err as Error).message}` };
+    return { ok: false, error: "Something went wrong submitting your verification. Please try again." };
   }
 }
 
