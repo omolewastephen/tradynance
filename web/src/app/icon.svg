@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tdy-tile" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#12D07A"/>
+      <stop offset="1" stop-color="#4C82FB"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#tdy-tile)"/>
+  <rect x="7" y="18" width="4" height="7.5" rx="2" fill="#fff" fill-opacity="0.72"/>
+  <rect x="14" y="12.5" width="4" height="13" rx="2" fill="#fff" fill-opacity="0.86"/>
+  <rect x="21" y="7" width="4" height="18.5" rx="2" fill="#fff"/>
+  <path d="M8 17.5L15.5 12L22.5 6.5" stroke="#04140A" stroke-opacity="0.26" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
