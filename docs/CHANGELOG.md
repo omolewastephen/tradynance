@@ -3,6 +3,28 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-22 — Dashboard audit (user + admin): design, a11y, and a real perf fix
+- **Raw enums no longer leak into the UI**: new `ui/status-pill.tsx` renders humanized statuses
+  ("Super Admin", "Verified") as pills with an icon + tint — icon alongside color per WCAG
+  color-not-only. `SUPER_ADMIN` / `VERIFIED` in mono caps was implementation detail shown to users.
+- **User overview is now an exchange overview**: live top-5 markets (reuses the shared Ticker query,
+  server-rendered, rows link to each market) + the user's 5 most recent ledger entries with signed
+  colored amounts, replacing the dead space. The KYC tile is actionable ("Verify now →" when
+  unverified/rejected, "Under review" when pending, "Withdrawals enabled" when verified); the
+  fund-your-account card only shows when the balance is actually $0; welcome line uses the username
+  rather than raw email.
+- **Admin queue tiles alert when non-empty**: pending KYC/deposits/withdrawals get a warning border,
+  warning-colored count, and an explicit "Needs review →" cue when > 0 — an ops dashboard's job is
+  to make non-empty queues impossible to miss. Zero-count tiles stay neutral. (Alert state is
+  logic-verified; not screenshotted — queues were genuinely empty and I wasn't going to fabricate
+  pending rows in production to pose one.)
+- **Perf: admin trade volume is now a SQL aggregate** (`SUM(price*quantity)` via `$queryRaw`). It
+  previously `findMany`'d **every trade row ever** and reduced in JS — an unbounded scan growing
+  with every fill.
+- A11y: `scope="col"` on the admin users table headers; balance-hero eye toggle got a ~32px hit
+  area (padding, not visual size), focus ring, and `aria-pressed`.
+- Verified live: new overview + admin render in production, 0px mobile overflow, /dashboard 2.36 kB.
+
 ## 2026-07-22 — Auth a11y/UX pass (measured, fixed, re-verified live)
 - **Mobile horizontal overflow fixed** (user-reported): measured 98px of overflow at 390px — the
   form column is a grid item, and grid items default to `min-width:auto`, so it refused to shrink
