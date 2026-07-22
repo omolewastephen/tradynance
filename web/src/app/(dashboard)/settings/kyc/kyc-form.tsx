@@ -18,6 +18,39 @@ const DOC_TYPES = [
 const fieldClass =
   "h-9 rounded-sm border border-border bg-surface px-3 text-sm text-foreground outline-none focus:border-primary/50";
 
+/**
+ * Downscale + recompress an image in the browser before upload. Phone photos of documents are
+ * 3–6MB each; three of them exceed the serverless payload ceiling (~6MB on Netlify), where the
+ * request doesn't even fail cleanly — it hangs. A 1600px JPEG keeps document text perfectly
+ * legible at roughly a tenth of the size. PDFs can't be recompressed here; they pass through and
+ * are caught by the total-size check instead. Falls back to the original file on any decode
+ * failure — the server still enforces its own limits.
+ */
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.size <= 800 * 1024) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob.slice()], file.name.replace(/\.\w+$/, "") + ".jpg", {
+      type: "image/jpeg",
+    });
+  } catch {
+    return file;
+  }
+}
+
+/** Keep the multipart body comfortably under the ~6MB serverless payload cap. */
+const MAX_TOTAL_BYTES = 4_500_000;
+
 export function KycForm() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +76,24 @@ export function KycForm() {
       action={(fd) => {
         setError(null);
         startTransition(async () => {
+          // Compress images client-side and drop empty optional file fields before upload.
+          let total = 0;
+          for (const key of ["front", "back", "selfie"]) {
+            const f = fd.get(key);
+            if (!(f instanceof File) || f.size === 0) {
+              fd.delete(key);
+              continue;
+            }
+            const compressed = await compressImage(f);
+            fd.set(key, compressed);
+            total += compressed.size;
+          }
+          if (total > MAX_TOTAL_BYTES) {
+            setError(
+              "Attachments are too large — the upload must stay under 4.5MB in total. Photos are compressed automatically, so this usually means a large PDF: reduce its size or upload a photo of the document instead.",
+            );
+            return;
+          }
           const r = await submitKyc(fd);
           if (r.ok) setDone(true);
           else setError(r.error);
@@ -128,15 +179,19 @@ export function KycForm() {
       </div>
 
       <p className="text-xs text-foreground-muted">
-        Files must be under 6MB each (JPG, PNG, WEBP or PDF). Your documents are stored privately
-        and are only accessible to our compliance team.
+        JPG, PNG, WEBP or PDF. Large photos are compressed automatically before upload. Your
+        documents are stored privately and are only accessible to our compliance team.
       </p>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
 
-      <Button type="submit" disabled={isPending} className="w-fit">
+      <Button type="submit" disabled={isPending} className="h-11 w-fit">
         <Upload className="size-4" />
-        {isPending ? "Submitting…" : "Submit for verification"}
+        {isPending ? "Uploading documents…" : "Submit for verification"}
       </Button>
     </form>
   );
