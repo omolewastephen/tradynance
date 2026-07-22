@@ -3,6 +3,33 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-22 — KYC submissions actually work now (server-action multipart hang); skeleton loaders
+- **User-reported "error" on /settings/kyc, root-caused in three layers.** The page itself was
+  fine — the failure was submissions with *real* documents. My original E2E passed with 70-byte
+  test images; realistic phone photos (3–6MB each) made the submit **hang forever with no
+  response** — no error, no timeout, spinner indefinitely.
+- **Layer 1 — client compression** (`kyc-form.tsx`): document photos are downscaled to 1600px JPEG
+  in the browser before upload (3.91MB → ~600KB, verified in-browser). Text stays perfectly
+  legible; PDFs can't be recompressed so a clear pre-submit total-size check (4.5MB) rejects them
+  with instructions instead of hanging.
+- **Layer 2 — the real bug: server-action multipart transport.** Even compressed (1.75MB total),
+  the action POST never received a response. Isolated with a temporary timing route on production:
+  through a **route handler** the identical parse + Cloudinary upload completes in ~1s at 2MB, at
+  every size tried. The server-action invocation path (Netlify runtime + Cloudflare) is what hangs
+  on non-tiny multipart bodies. **Fix: KYC submission moved to `POST /api/kyc/submit`** (same
+  validations, rate limit, transaction, audit; CSRF posture unchanged — the session cookie is
+  SameSite=Lax). Verified live: a 1.8MB three-document submission returns `{"ok":true}` and lands
+  PENDING with all three files on Cloudinary. Diagnostic route deleted after use.
+- **Layer 3 — silent client failure:** the form awaited the action inside `startTransition` with no
+  catch, so a transport failure produced *nothing* — no error, no state change. The fetch now has
+  an explicit catch with a human message.
+- **Skeleton loaders across the board** (user request): `ui/skeleton.tsx` + route-group
+  `loading.tsx` for the dashboard (covers every user + admin page in one file — App Router shows it
+  instantly during any server render) and the marketing site. Shaped like the real page anatomy so
+  content swap is calm, `aria-busy` for screen readers.
+- Test artifacts fully cleaned: probe user + every Cloudinary test asset deleted (verified by
+  direct fetch → 404; the admin listing API caches and may lag).
+
 ## 2026-07-22 — Dashboard audit (user + admin): design, a11y, and a real perf fix
 - **Raw enums no longer leak into the UI**: new `ui/status-pill.tsx` renders humanized statuses
   ("Super Admin", "Verified") as pills with an icon + tint — icon alongside color per WCAG
