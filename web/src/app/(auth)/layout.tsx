@@ -81,7 +81,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
           </Link>
         </div>
 
-        <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-8">
+        <div className="flex flex-1 flex-col justify-start px-5 pb-8 pt-10 sm:px-8 lg:justify-center lg:pt-8">
           <div className="mx-auto w-full max-w-md">
             {children}
             {/* Mobile-only live strip — keeps the small screen contentful without the full panel. */}
