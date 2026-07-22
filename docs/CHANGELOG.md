@@ -3,6 +3,26 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-22 — Auth a11y/UX pass (measured, fixed, re-verified live)
+- **Mobile horizontal overflow fixed** (user-reported): measured 98px of overflow at 390px — the
+  form column is a grid item, and grid items default to `min-width:auto`, so it refused to shrink
+  below the no-wrap ticker strip's intrinsic ~448px and pushed the whole page wide; the strip's own
+  `overflow-x-auto` never engaged. `min-w-0` on both grid columns; re-measured **0px** on login and
+  register.
+- **Accessibility audit of the live pages, then fixes, then re-audit:** errors are now announced
+  (`role="alert"` on server + field errors, `aria-invalid`/`aria-describedby` wiring), submit CTAs
+  are 44px touch targets, validation runs on blur (`mode:"onTouched"`) instead of submit-only,
+  register shows the password rules as persistent hint text (matching the zod schema) rather than
+  only as errors, and the decorative panel headline demoted h2→p so the form's h1 tops the outline.
+- **Password show/hide toggle** (`ui/password-input.tsx`) on all three password fields — a real
+  focusable button with `aria-label`/`aria-pressed`.
+- **Register hydration gate added** — login had it but register didn't: pre-hydration a submit
+  falls back to a native GET, putting the password in the URL (history + server logs). Same guard
+  both forms now. Also stacked register's paired fields on phones (`grid-cols-1 sm:grid-cols-2`).
+- Submit buttons get a spinner + brand glow; cost of the whole pass ≈ +0.8kB per page.
+- Verified live post-deploy: 0px overflow, 44px CTAs, toggles work (type flips to text), on-blur
+  inline error announced, headings H1-only, hint present.
+
 ## 2026-07-22 — Auth redesign, brand favicon, KYC verified end-to-end
 - **Login & register redesigned** into a split-screen shell (`(auth)/layout.tsx`): a graphical brand
   panel (gradient headline, trust points, and a **live market list from the real Ticker cache** with
