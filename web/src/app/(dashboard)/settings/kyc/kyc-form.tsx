@@ -6,7 +6,6 @@ import { ShieldCheck, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { submitKyc } from "./actions";
 
 const DOC_TYPES = [
   { value: "PASSPORT", label: "Passport" },
@@ -94,9 +93,17 @@ export function KycForm() {
             );
             return;
           }
-          const r = await submitKyc(fd);
-          if (r.ok) setDone(true);
-          else setError(r.error);
+          // A route handler, not a server action: server-action multipart bodies beyond ~a few
+          // hundred KB hang on the production runtime (see /api/kyc/submit). The explicit catch
+          // matters too — a dropped connection must surface, not vanish into a rejected promise.
+          try {
+            const res = await fetch("/api/kyc/submit", { method: "POST", body: fd });
+            const r = (await res.json()) as { ok: boolean; error?: string };
+            if (r.ok) setDone(true);
+            else setError(r.error ?? "Something went wrong. Please try again.");
+          } catch {
+            setError("The upload didn't go through — check your connection and try again.");
+          }
         });
       }}
       className="flex flex-col gap-5"
