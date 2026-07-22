@@ -14,17 +14,37 @@ function StatTile({
   value,
   hint,
   href,
+  alert = false,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
   href?: string;
+  alert?: boolean;
 }) {
+  // `alert` marks a queue that needs a human: an ops dashboard's job is to make non-empty queues
+  // impossible to miss, so those tiles get the warning accent + an explicit "Review →" cue
+  // (text as well as color).
   const inner = (
-    <Card className="h-full p-5 transition-colors hover:bg-surface-raised/50">
+    <Card
+      className={
+        "h-full p-5 transition-colors hover:bg-surface-raised/50 " +
+        (alert ? "border-warning/40" : "")
+      }
+    >
       <span className="text-micro uppercase tracking-wide text-foreground-muted">{label}</span>
-      <div className="mt-2 font-mono text-data-lg tabular-nums">{value}</div>
-      {hint && <span className="mt-1 block text-xs text-foreground-muted">{hint}</span>}
+      <div
+        className={
+          "mt-2 font-mono text-data-lg tabular-nums " + (alert ? "text-warning" : "")
+        }
+      >
+        {value}
+      </div>
+      {alert ? (
+        <span className="mt-1 block text-xs font-medium text-warning">Needs review →</span>
+      ) : (
+        hint && <span className="mt-1 block text-xs text-foreground-muted">{hint}</span>
+      )}
     </Card>
   );
   return href ? <Link href={href}>{inner}</Link> : inner;
@@ -48,15 +68,17 @@ export default async function AdminPage() {
     prisma.user.count({ where: { kycStatus: "PENDING" } }),
     prisma.deposit.count({ where: { status: { in: ["PENDING", "CONFIRMED"] } } }),
     prisma.withdrawal.count({ where: { status: { in: ["PENDING", "APPROVED", "PROCESSING"] } } }),
-    // Traded notional (quote): Σ price×quantity. Prisma can't multiply in aggregate, so pull sums.
     prisma.trade.aggregate({ _count: true }),
     prisma.trade.aggregate({ _sum: { buyerFee: true, sellerFee: true } }),
     prisma.conversion.count(),
   ]);
 
-  // Trade volume + fee revenue in quote (USDT ≈ USD). Volume needs price×qty per row.
-  const trades = await prisma.trade.findMany({ select: { price: true, quantity: true } });
-  const tradeVolume = trades.reduce((s, t) => s + Number(t.price) * Number(t.quantity), 0);
+  // Traded notional (quote, USDT ≈ USD): Σ price×quantity in SQL. Prisma can't multiply inside an
+  // aggregate, but fetching every trade row to reduce in JS (the previous approach) is an unbounded
+  // scan that gets slower with every fill — the DB does this in one pass.
+  const [{ volume: tradeVolume }] = await prisma.$queryRaw<[{ volume: number }]>`
+    SELECT COALESCE(SUM(price * quantity), 0)::float8 AS volume FROM "Trade"
+  `;
   const feeRevenue =
     Number(feeAgg._sum.buyerFee ?? 0) + Number(feeAgg._sum.sellerFee ?? 0);
 
@@ -69,9 +91,19 @@ export default async function AdminPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="Users" value={totalUsers} hint={`${activeUsers} active`} href="/admin/users" />
-        <StatTile label="Pending KYC" value={pendingKyc} href="/admin/kyc" />
-        <StatTile label="Pending deposits" value={pendingDeposits} href="/admin/deposits" />
-        <StatTile label="Pending withdrawals" value={pendingWithdrawals} href="/admin/withdrawals" />
+        <StatTile label="Pending KYC" value={pendingKyc} href="/admin/kyc" alert={pendingKyc > 0} />
+        <StatTile
+          label="Pending deposits"
+          value={pendingDeposits}
+          href="/admin/deposits"
+          alert={pendingDeposits > 0}
+        />
+        <StatTile
+          label="Pending withdrawals"
+          value={pendingWithdrawals}
+          href="/admin/withdrawals"
+          alert={pendingWithdrawals > 0}
+        />
         <StatTile label="Trades" value={tradeAgg._count} />
         <StatTile label="Trade volume" value={`$${usd(tradeVolume)}`} hint="quote notional" />
         <StatTile label="Fee revenue" value={`$${usd(feeRevenue)}`} hint="taker + maker fees" />

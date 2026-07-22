@@ -84,12 +84,12 @@ export default async function AdminUsersPage({
           <table className="w-full min-w-160 text-sm">
             <thead>
               <tr className="border-b border-border-subtle text-left text-micro uppercase tracking-wide text-foreground-muted">
-                <th className="py-3 pl-5 font-medium">User</th>
-                <th className="py-3 pr-4 font-medium">Role</th>
-                <th className="py-3 pr-4 font-medium">Status</th>
-                <th className="py-3 pr-4 font-medium">KYC</th>
-                <th className="py-3 pr-4 font-medium">Country</th>
-                <th className="py-3 pr-5 font-medium">Joined</th>
+                <th scope="col" className="py-3 pl-5 font-medium">User</th>
+                <th scope="col" className="py-3 pr-4 font-medium">Role</th>
+                <th scope="col" className="py-3 pr-4 font-medium">Status</th>
+                <th scope="col" className="py-3 pr-4 font-medium">KYC</th>
+                <th scope="col" className="py-3 pr-4 font-medium">Country</th>
+                <th scope="col" className="py-3 pr-5 font-medium">Joined</th>
               </tr>
             </thead>
             <tbody>

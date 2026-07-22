@@ -22,10 +22,12 @@ export function BalanceHero({ totalUsd }: { totalUsd: number }) {
         <span className="text-micro uppercase tracking-wide text-foreground-muted">
           Estimated balance
         </span>
+        {/* -m-2 keeps the visual footprint small while p-2 grows the hit area to ~32px. */}
         <button
           onClick={() => setHidden((h) => !h)}
-          className="text-foreground-muted transition-colors hover:text-foreground"
+          className="-m-2 rounded-sm p-2 text-foreground-muted outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
           aria-label={hidden ? "Show balance" : "Hide balance"}
+          aria-pressed={hidden}
         >
           {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
         </button>
