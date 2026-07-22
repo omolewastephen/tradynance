@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { v2 as cloudinary } from "cloudinary";
 
 /**
@@ -80,7 +81,7 @@ export async function uploadKycDocument(
 
   const buffer = Buffer.from(await file.arrayBuffer());
   // Random segment keeps ids unguessable even if a user id leaks.
-  const publicId = `${kind}-${crypto.randomUUID()}`;
+  const publicId = `${kind}-${randomUUID()}`;
 
   try {
     const result = await new Promise<{ public_id: string; format?: string; resource_type: string }>(

@@ -30,6 +30,17 @@ function isAtLeast18(dob: Date): boolean {
 }
 
 export async function submitKyc(formData: FormData): Promise<SubmitResult> {
+  try {
+    return await submitKycInner(formData);
+  } catch (err) {
+    // TEMPORARY DIAGNOSTIC — an unhandled throw here otherwise shows the generic 500 boundary with
+    // no cause. Surface it so a failing submit is diagnosable, then revert to a generic message.
+    console.error("[kyc] submit threw:", (err as Error).stack ?? (err as Error).message);
+    return { ok: false, error: `submit failed: ${(err as Error).message}` };
+  }
+}
+
+async function submitKycInner(formData: FormData): Promise<SubmitResult> {
   const session = await requireUser();
 
   if (!kycStorageConfigured()) {
