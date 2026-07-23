@@ -3,6 +3,23 @@
 Dated, newest first. One bullet per change; note *why* when it's not obvious. This is the
 skimmable running record — see `git log` for full diffs.
 
+## 2026-07-23 — Admin manual credit: pickable coin/network, searchable user, jump from user page
+- **Manual deposit credit form upgraded** (user request): free-text asset/network/email inputs
+  replaced with a **coin dropdown** (full catalog, "BTC — Bitcoin"), a **dependent network
+  dropdown** (only the selected coin's networks — invalid combinations are now unpickable), and a
+  **searchable user picker** (dependency-free Select2-style combobox over
+  `/api/admin/users/search`, matches email or username, keyboard-navigable, finance-role-gated
+  since it reveals emails; a pasted full email still works without picking).
+- **"Credit deposit" button on the admin user detail page** → jumps to the deposits form with that
+  user preselected (`?user=…#manual-credit`). Safe for every viewer of that page:
+  `USER_ADMIN_ROLES ⊆ FINANCE_ROLES`.
+- **Deliberately non-breaking for the live site:** the server action is untouched — same field
+  names, same validation, same idempotent `creditDeposit` ledger path. The dropdowns only
+  constrain what can be typed. Verified live in production: 19 coins listed, ETH → ETH_SEPOLIA
+  dependency, search returns and picks real users, prefill matches, and a nonexistent email
+  surfaces the action's own error (proving the form→action wiring intact). No test credit was made
+  — the money path is byte-identical to what's already been crediting deposits since Phase 2.
+
 ## 2026-07-22 — KYC submissions actually work now (server-action multipart hang); skeleton loaders
 - **User-reported "error" on /settings/kyc, root-caused in three layers.** The page itself was
   fine — the failure was submissions with *real* documents. My original E2E passed with 70-byte
