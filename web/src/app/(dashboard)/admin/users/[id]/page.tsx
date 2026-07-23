@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Landmark } from "lucide-react";
 
 import { requireRole } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -38,14 +39,25 @@ export default async function AdminUserDetailPage({
 
   return (
     <div className="flex animate-fade-rise flex-col gap-6">
-      <div>
-        <Link href="/admin/users" className="text-sm text-accent hover:underline">
-          ← Users
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Link href="/admin/users" className="text-sm text-accent hover:underline">
+            ← Users
+          </Link>
+          <h1 className="mt-1 font-display text-h1 tracking-tight">{user.email}</h1>
+          <p className="font-mono text-sm text-foreground-muted">
+            @{user.username} · {user.role} · {user.status} · KYC {user.kycStatus}
+          </p>
+        </div>
+        {/* Jumps to the manual-credit form with this user preselected. Safe for everyone who can
+            see this page: USER_ADMIN_ROLES is a subset of the deposits page's FINANCE_ROLES. */}
+        <Link
+          href={`/admin/deposits?user=${encodeURIComponent(user.email)}#manual-credit`}
+          className="inline-flex h-10 items-center gap-2 rounded-sm bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Landmark className="size-4" />
+          Credit deposit
         </Link>
-        <h1 className="mt-1 font-display text-h1 tracking-tight">{user.email}</h1>
-        <p className="font-mono text-sm text-foreground-muted">
-          @{user.username} · {user.role} · {user.status} · KYC {user.kycStatus}
-        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">

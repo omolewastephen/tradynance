@@ -8,10 +8,22 @@ import { ClaimQueue, type ClaimRow } from "./claim-queue";
 
 export const metadata: Metadata = { title: "Deposits — Admin — Tradynance" };
 
-export default async function AdminDepositsPage() {
+export default async function AdminDepositsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ user?: string }>;
+}) {
   await requireRole(["SUPER_ADMIN", "ADMIN", "FINANCE"]);
+  // Prefill target for the manual-credit form — set by the "Credit deposit" button on a user's
+  // admin detail page.
+  const { user: prefillEmail } = await searchParams;
 
-  const [claims, pending, recent] = await Promise.all([
+  const [assets, claims, pending, recent] = await Promise.all([
+    // Coin + network catalog for the form dropdowns, so invalid combinations are unpickable.
+    prisma.asset.findMany({
+      orderBy: { symbol: "asc" },
+      select: { symbol: true, name: true, networks: { select: { network: true } } },
+    }),
     // User-submitted "I've paid" claims awaiting review (identity + amount + txid attached).
     prisma.deposit.findMany({
       where: { source: "CLAIM", status: { in: ["PENDING", "CONFIRMED"] } },
@@ -75,7 +87,7 @@ export default async function AdminDepositsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="manual-credit" className="scroll-mt-24">
         <CardHeader>
           <CardTitle>Manual deposit credit</CardTitle>
           <CardDescription>
@@ -84,7 +96,14 @@ export default async function AdminDepositsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ManualCreditForm />
+          <ManualCreditForm
+            assets={assets.map((a) => ({
+              symbol: a.symbol,
+              name: a.name,
+              networks: a.networks.map((n) => n.network),
+            }))}
+            initialEmail={prefillEmail ?? ""}
+          />
         </CardContent>
       </Card>
 
